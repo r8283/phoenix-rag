@@ -1,0 +1,488 @@
+[
+  {
+    "id": 1,
+    "type": "in",
+    "question": "יש לי נזילה בבית, איך אני מגישה תביעה?",
+    "expect_any": [
+      "claims-appartment-insurance",
+      "apartment-information"
+    ],
+    "answer": "במקרה של נזקי מים יש לבדוק את הפוליסה וניתן לבחור שרברב מתוך רשימת ההסדר של החברה או להזמין שרברב פרטי, בהתאם לבחירה שנעשתה בעת רכישת הפוליסה. כמו כן, ניתן ליצור קשר עם מוקד השירות או למלא טופס מקוון באתר ולצרף את המסמכים הרלוונטיים. את הפוליסה האישית שלך בודקים בשירות הלקוחות.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/structure/",
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/when-apartment-insurance-claim/"
+    ],
+    "status": "answered",
+    "top_score": 0.9149504899978638,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "איך מגישים תביעת ביטוח בגין נזק מים בדירה?",
+    "seconds": 9.5,
+    "verdict": "עבר"
+  },
+  {
+    "id": 2,
+    "type": "in",
+    "question": "ותוך כמה זמן מקבלים תשובה?",
+    "follow_up_of": 1,
+    "expect_any": [
+      "when-apartment-insurance-claim",
+      "claims-appartment-insurance"
+    ],
+    "answer": "תוך 30 יום מיום קבלת כל המסמכים הנדרשים תגיע הודעה מחברת הביטוח לגבי התביעה. הודעה זו יכולה לכלול אישור זכאות, הצעה לפשרה, דחייה מנומקת או הודעה על המשך בירור והסיבות לעיכוב.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/when-apartment-insurance-claim/"
+    ],
+    "status": "answered",
+    "top_score": 0.8647331595420837,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "תוך כמה זמן מתקבלת תשובה על תביעת נזקי מים?",
+    "seconds": 1.5,
+    "verdict": "עבר"
+  },
+  {
+    "id": 3,
+    "type": "in",
+    "question": "מה עושים כשיש הצפה בדירה?",
+    "expect_any": [
+      "flood"
+    ],
+    "answer": "במקרה של הצפה ביתית יש לנתק תחילה את החשמל הראשי כדי למנוע התחשמלות, לאחר מכן לסגור את השיבר הראשי כדי לעצור את מקור המים, ולדאוג לפינוי הדיירים למקום בטוח ויבש. כמו כן, מומלץ להרים מהרצפה חפצים שעלולים להיפגע, וכן ניתן לבחור מראש בעת עריכת הביטוח במסלול טיפול באמצעות שרברב בהסדר החברה או בשרברב פרטי.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/apartment-flood-costs/",
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/water-plumbing-damages/",
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/apartment-winter-damages/"
+    ],
+    "status": "answered",
+    "top_score": 0.8908132314682007,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "מהן הפעולות הנדרשות במקרה של נזק מים בדירה?",
+    "seconds": 1.9,
+    "verdict": "עבר"
+  },
+  {
+    "id": 4,
+    "type": "in",
+    "question": "האם ביטוח דירה מכסה נזקי מים?",
+    "expect_any": [
+      "water",
+      "apartment-insurance"
+    ],
+    "answer": "ביטוח דירה כולל כיסוי לנזקי מים וצנרת כחלק מהפוליסה, המגן מפני נזקים שנגרמים ממתקני אינסטלציה, צינורות מים, דוד ופגעי מזג אוויר. ביטוח זה מכסה הן את קירות המבנה והן את הריהוט והחפצים בבית בהתאם לסוג הביטוח הנרכש.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/",
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/water-plumbing-damages/"
+    ],
+    "status": "answered",
+    "top_score": 0.9074152708053589,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "האם ביטוח דירה מכסה נזקי מים?",
+    "seconds": 5.9,
+    "verdict": "עבר"
+  },
+  {
+    "id": 5,
+    "type": "in",
+    "question": "מה זה ביטוח תכולה?",
+    "expect_any": [
+      "content"
+    ],
+    "answer": "ביטוח תכולת דירה נועד לספק הגנה מפני נזקים העלולים להיגרם לרכוש הנמצא בדירה בבעלות או באחריות המבוטח ובני משפחתו, וכן מגן מפני הוצאות גדולות ובלתי צפויות במקרה של נזק לרכוש שאינו חלק ממבנה הדירה. הפוליסה מכסה רכוש כגון רהיטים, מכשירי חשמל, חפצים, בגדים ותכשיטים, ומעניקה כיסוי במקרים של פריצה, גניבה, שריפה, מזג אוויר קיצוני, הצפה או רעידת אדמה.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/apartment-content-insurance-extensions/",
+      "https://www.fnx.co.il/apartment-insurance/apartment-contents-insurance/"
+    ],
+    "status": "answered",
+    "top_score": 0.9207837581634521,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "מהו ביטוח תכולת דירה?",
+    "seconds": 3.4,
+    "verdict": "עבר"
+  },
+  {
+    "id": 6,
+    "type": "in",
+    "question": "מה לא מכוסה בביטוח תכולה?",
+    "expect_any": [
+      "content"
+    ],
+    "answer": "ביטוח תכולת דירה אינו מכסה רכוש הנמצא מחוץ לדירה, כלי תחבורה סטנדרטיים וחריגים, ונזקים ממלחמה או מפיגוע חבלני. כמו כן, הפוליסה מחריגה פריטים כגון כלי נשק, חוזים, ניירות ערך, מתכות יקרות ויהלומים, בעלי חיים וכספים במזומן, אם כי לחלקם ניתן לרכוש הרחבה מתאימה.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/what-is-and-is-not-included-in-the-flat-contents-insurance/",
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/apartment-content-insurance-extensions/"
+    ],
+    "status": "answered",
+    "top_score": 0.8871027231216431,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "מהם החריגים בביטוח תכולת דירה?",
+    "seconds": 2.0,
+    "verdict": "עבר"
+  },
+  {
+    "id": 7,
+    "type": "in",
+    "question": "אילו הרחבות אפשר להוסיף לביטוח תכולת דירה?",
+    "expect_any": [
+      "extension",
+      "content"
+    ],
+    "answer": "לביטוח תכולת הדירה ניתן להוסיף הרחבות שונות, בהן ביטוח \"כל הסיכונים\" לפריטים בעלי ערך רב כמו תכשיטים ושעוני יד, כיסוי לפעילות עסקית המבוצעת בחלק מהדירה, וביטוח לכלי נשק. הרחבות נוספות כוללות בין היתר ביטוח אופניים, כיסויים למגזר הדתי כמו טלית ותפילין מחוץ לדירה, והרחבה לנזקי טרור.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/apartment-content-insurance-extensions/",
+      "https://www.fnx.co.il/apartment-insurance/apartment-contents-insurance/",
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/guide-covers-and-extensions/"
+    ],
+    "status": "answered",
+    "top_score": 0.9168130159378052,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "אילו הרחבות ניתן להוסיף לפוליסת ביטוח תכולת דירה?",
+    "seconds": 2.2,
+    "verdict": "עבר"
+  },
+  {
+    "id": 8,
+    "type": "in",
+    "question": "מה כולל ביטוח מבנה?",
+    "expect_any": [
+      "structure",
+      "apartment"
+    ],
+    "answer": "ביטוח מבנה מעניק הגנה וכיסוי עבור המבנה וכל חלקיו הקבועים, כגון מרפסות, תשתיות חשמל, מים, גז וטלפון, מערכות הסקה ומיזוג אוויר, דוודים, חלונות, דלתות, שערים וגדרות. הפוליסה מכסה נזקים שנגרמים כתוצאה מאש, התפוצצות או התלקחות, נזקי מזג אוויר קיצוניים, שיטפון או הצפה ממקור מים חיצוני, התנגשות כלי רכב, נפילת כלי טיס, רעידת אדמה ונזקי שוד או פריצה. בנוסף, ניתן להוסיף כיסויים נרחבים יותר כגון נזקי צנרת, ביטוח אחריות כלפי צד שלישי וביטוח חבות מעבידים.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/structure/",
+      "https://www.fnx.co.il/apartment-insurance/"
+    ],
+    "status": "answered",
+    "top_score": 0.9054371118545532,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "מה כולל ביטוח מבנה?",
+    "seconds": 2.7,
+    "verdict": "עבר"
+  },
+  {
+    "id": 9,
+    "type": "in",
+    "question": "האם הביטוח מכסה פריצה לדירה?",
+    "expect_any": [
+      "break-in",
+      "apartment-insurance",
+      "home-insurance"
+    ],
+    "answer": "פוליסת ביטוח הדירה מכסה נזקים שנגרמו לדירה ולתוכלתה עקב פריצה וגניבה. במסגרת הפולי׮ה ניתן קיצוי כספי שווה ערך לחפצים שנגנבו או לנזק שנגרם.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/safe-house/",
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/all-risks-insurance/"
+    ],
+    "status": "answered",
+    "top_score": 0.8961769342422485,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "האם פוליסת ביטוח דירה כוללת כיסוי למקרה של פריצה?",
+    "seconds": 3.3,
+    "verdict": "עבר"
+  },
+  {
+    "id": 10,
+    "type": "in",
+    "question": "מה עושים אחרי פריצה לבית?",
+    "expect_any": [
+      "break-in"
+    ],
+    "answer": "לאחר פריצה לבית יש לצאת מהבית ולהתקשר למשטרה, לשמור על הזירה מבלי לגעת בחפצים כדי לא לשבש את החקירה, ולתעד את הנזקים באמצעות תמונות וסרטונים. יש לעדכן את חברת הביטוח, להעביר לה את אישור המשטרה, ולשלוח דוח המסכם את פרטי הרכוש שניזוק או נגנב לצורך קבלת פיצוי.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/in-case-of-break-in/"
+    ],
+    "status": "answered",
+    "top_score": 0.9010423421859741,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "מהן הפעולות הנדרשות לאחר פריצה לבית לצורך הגשת תביעת ביטוח?",
+    "seconds": 2.1,
+    "verdict": "עבר"
+  },
+  {
+    "id": 11,
+    "type": "in",
+    "question": "איך מתכוננים לחורף כדי למנוע נזקי רטיבות בבית?",
+    "expect_any": [
+      "winter",
+      "wetness",
+      "water"
+    ],
+    "answer": "כדי למנוע נזקי רטיבות בחורף, מומלץ לבצע בדיקת מרזבים לוודא זרימה תקינה ולוודא שהגג אטום היטב עוד בעונת הקיץ. בנוסף, רצוי לסרוק את הקירות החיצוניים, החלונות וארגזי התריסים לאיתור סדקים וחורים שדרכם עלולים לחדור מים וקור.",
+    "sources": [
+      "https://www.fnx.co.il/apartment-insurance/apartment-information/apartment-winter-damages/"
+    ],
+    "status": "answered",
+    "top_score": 0.88433837890625,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "איך מתכוננים לחורף כדי למנוע נזקי רטיבות בבית?",
+    "seconds": 2.1,
+    "verdict": "עבר"
+  },
+  {
+    "id": 12,
+    "type": "in",
+    "question": "איך מגישים תביעה בביטוח רכב?",
+    "expect_any": [
+      "claims-car-insurance"
+    ],
+    "answer": "ניתן להגיש תביעת ביטוח רכב באופן דיגיטלי באתר הפניקס או באפליקציית הפניקס Smart על ידי מילוי טופס תביעה דיגיטלי והעלאת המסמכים הדרושים. כמו כן, ניתן לקבל הדרכה והכונה בהגשת תביעה דרך הוואטסאפ או לפנות אל סוכן הביטוח. לחלופין, ניתן להוריד את טופס התביעה, למלא אותו ולשלוח אותו בצירוף המסמכים במייל, במסרון או בדואר.",
+    "sources": [
+      "https://www.fnx.co.il/claims-customer-service/claims-car-insurance/",
+      "https://www.fnx.co.il/car-insurance/",
+      "https://www.fnx.co.il/car-insurance/car_information/car_insurance_changes/"
+    ],
+    "status": "answered",
+    "top_score": 0.8920273780822754,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "איך מגישים תביעה בביטוח רכב?",
+    "seconds": 1.9,
+    "verdict": "עבר"
+  },
+  {
+    "id": 13,
+    "type": "in",
+    "question": "מה ההבדל בין ביטוח מקיף לביטוח צד ג?",
+    "expect_any": [
+      "comprehensive",
+      "car-insurance"
+    ],
+    "answer": "ביטוח מקיף מספק כיסוי רחב הכולל נזקים שנגרמים לרכב המבוטח וכן לרכב ולרכוש של צד שלישי, כולל מקרים של גניבה, טוטאל-לוס ונזקי טבע. לעומת זאת, ביטוח צד ג' הוא כיסוי מצומצם יותר המגן אך ורק בפני פגיעות ברכוש של צד שלישי, ואינו כולל כיסוי לנזקים שנגרמים לרכב המבוטח עצמו או פיצוי בגין גניבתו.",
+    "sources": [
+      "https://www.fnx.co.il/car-insurance/third-party-insurance-cautious-fnx/",
+      "https://www.fnx.co.il/car-insurance/car_information/comprehensive-insurance-when-should/",
+      "https://www.fnx.co.il/car-insurance/car_information/comprehensive-insurance-and-compulsory-insurance/"
+    ],
+    "status": "answered",
+    "top_score": 0.9206613302230835,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "מה ההבדל בין ביטוח מקיף לביטוח צד ג'?",
+    "seconds": 2.3,
+    "verdict": "עבר"
+  },
+  {
+    "id": 14,
+    "type": "in",
+    "question": "איך מגישים תביעת רכב חובה בגין תאונת דרכים?",
+    "expect_any": [
+      "compulsory",
+      "claims-car-insurance"
+    ],
+    "answer": "כדי להגיש תביעת ביטוח חובה יש למלא טופס תביעה באופן דיגיטלי או להוריד, להדפיס ולמלא אותו בכתב. לאחר מכן יש לצרף את המסמכים הרלוונטיים הנדרשים ולשלוח את הטופס והמסמכים באחד מהאופנים המוצעים, כמו דרך סוכן הביטוח, דואר ישראל, דוא\"ל, פקס או מסרון. אזרחים ותיקים (מי שמלאו להם 67 שנים) יכולים להגיש תביעה בעל פה באמצעות נציג החברה.",
+    "sources": [
+      "https://www.fnx.co.il/claims-customer-service/claims-car-insurance/compulsory-motor-claims/"
+    ],
+    "status": "answered",
+    "top_score": 0.9046740531921387,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "איך מגישים תביעת ביטוח חובה בגין תאונת דרכים?",
+    "seconds": 5.2,
+    "verdict": "עבר"
+  },
+  {
+    "id": 15,
+    "type": "in",
+    "question": "איך מגישים תביעה בגין נכות מתאונה?",
+    "expect_any": [
+      "invalidity",
+      "claims-life-insurance"
+    ],
+    "answer": "הדרך הפשוטה והמהירה ביותר להגיש תביעה בגין נכות מתאונה היא למלא טופס תביעה דיגיטלי, או לחלופין להוריד את הטופס כקובץ PDF מהאזור האישי למלא ולשלוח. אזרחים ותיקים שמלאו להם 67 שנים יכולים להגיש תביעה בעל-פה באמצעות נציג החברה. לטופס יש לצרף מסמכים המפרטים את נסיבות התאונה ותוצאותיה, מסמך רפואי המעיד על הנכות הצמיתה ושיעורה, צילום תעודת זהות וצילום שיק או אסמכתא על ניהול חשבון בנק.",
+    "sources": [
+      "https://www.fnx.co.il/claims-customer-service/claims-life-insurance/claims-permanent_invalidity/"
+    ],
+    "status": "answered",
+    "top_score": 0.908180832862854,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "איך מגישים תביעה בגין נכות מתאונה?",
+    "seconds": 2.4,
+    "verdict": "עבר"
+  },
+  {
+    "id": 16,
+    "type": "in",
+    "question": "אילו מסמכים צריך לצרף לתביעה בביטוח דירה?",
+    "expect_any": [
+      "claims-appartment-insurance",
+      "apartment-information"
+    ],
+    "answer": "להגשת תביעת ביטוח דירה יש לצרף את המסמכים הרלוונטיים הנדרשים בהתאם לסוג התביעה, כגון טופס תביעה מלא ומסמכים נלווים. ייתכן גם שחברת הביטוח תבקש להעביר מידע או מסמכים נוספים בהמשך התהליך.",
+    "sources": [
+      "https://www.fnx.co.il/claims-customer-service/claims-appartment-insurance/claims-third-party-house/",
+      "https://www.fnx.co.il/claims-customer-service/claims-liability-insurance/third-party-liability/"
+    ],
+    "status": "answered",
+    "top_score": 0.88504958152771,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "אילו מסמכים נדרש לצרף להגשת תביעה בביטוח דירה?",
+    "seconds": 5.3,
+    "verdict": "עבר"
+  },
+  {
+    "id": 17,
+    "type": "near",
+    "question": "כמה עולה ביטוח דירה לדירה של 100 מטר בתל אביב?",
+    "answer": "המידע הזה לא מופיע באתר הפניקס. מומלץ לפנות לשירות הלקוחות של הפניקס.",
+    "sources": [],
+    "status": "not_found",
+    "top_score": 0.8535498976707458,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "מה עלות ביטוח דירה בשטח של 100 מ\"ר בתל אביב?",
+    "seconds": 21.3,
+    "verdict": "עבר"
+  },
+  {
+    "id": 18,
+    "type": "near",
+    "question": "איזו חברת ביטוח היא הכי טובה בישראל?",
+    "answer": "המידע הזה לא מופיע באתר הפניקס. מומלץ לפנות לשירות הלקוחות של הפניקס.",
+    "sources": [],
+    "status": "not_found",
+    "top_score": 0.8648278713226318,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "איזו חברת ביטוח היא הטובה ביותר בישראל?",
+    "seconds": 1.5,
+    "verdict": "עבר"
+  },
+  {
+    "id": 19,
+    "type": "near",
+    "question": "מה מחיר המניה של הפניקס היום?",
+    "answer": "המידע הזה לא מופיע באתר הפניקס. מומלץ לפנות לשירות הלקוחות של הפניקס.",
+    "sources": [],
+    "status": "not_found",
+    "top_score": 0.8330244421958923,
+    "model": null,
+    "standalone": "מה מחיר המניה של הפניקס היום?",
+    "seconds": 0.6,
+    "verdict": "עבר"
+  },
+  {
+    "id": 20,
+    "type": "near",
+    "question": "האם כדאי לי לעבור לחברת ביטוח אחרת?",
+    "answer": "המידע הזה לא מופיע באתר הפניקס. מומלץ לפנות לשירות הלקוחות של הפניקס.",
+    "sources": [],
+    "status": "not_found",
+    "top_score": 0.8745753765106201,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "האם כדאי לי לעבור לחברת ביטוח אחרת?",
+    "seconds": 1.6,
+    "verdict": "עבר"
+  },
+  {
+    "id": 21,
+    "type": "out",
+    "question": "איך מכינים עוגת שוקולד?",
+    "answer": "המידע הזה לא מופיע באתר הפניקס. מומלץ לפנות לשירות הלקוחות של הפניקס.",
+    "sources": [],
+    "status": "not_found",
+    "top_score": 0.804694414138794,
+    "model": null,
+    "standalone": "איך מכינים עוגת שוקולד?",
+    "seconds": 0.5,
+    "verdict": "עבר"
+  },
+  {
+    "id": 22,
+    "type": "out",
+    "question": "מהי בירת צרפת?",
+    "answer": "המידע הזה לא מופיע באתר הפניקס. מומלץ לפנות לשירות הלקוחות של הפניקס.",
+    "sources": [],
+    "status": "not_found",
+    "top_score": 0.8255443572998047,
+    "model": null,
+    "standalone": "מהי בירת צרפת?",
+    "seconds": 0.6,
+    "verdict": "עבר"
+  },
+  {
+    "id": 23,
+    "type": "out",
+    "question": "איך מתקנים תקלה במחשב נייד?",
+    "answer": "המידע הזה לא מופיע באתר הפניקס. מומלץ לפנות לשירות הלקוחות של הפניקס.",
+    "sources": [],
+    "status": "not_found",
+    "top_score": 0.8430886268615723,
+    "model": null,
+    "standalone": "איך מתקנים תקלה במחשב נייד?",
+    "seconds": 0.5,
+    "verdict": "עבר"
+  },
+  {
+    "id": 24,
+    "type": "out",
+    "question": "מה מזג האוויר מחר?",
+    "answer": "המידע הזה לא מופיע באתר הפניקס. מומלץ לפנות לשירות הלקוחות של הפניקס.",
+    "sources": [],
+    "status": "not_found",
+    "top_score": 0.8284854888916016,
+    "model": null,
+    "standalone": "מה מזג האוויר מחר?",
+    "seconds": 0.7,
+    "verdict": "עבר"
+  },
+  {
+    "id": 25,
+    "type": "out",
+    "question": "איך מחשבים שטח של מעגל?",
+    "answer": "המידע הזה לא מופיע באתר הפניקס. מומלץ לפנות לשירות הלקוחות של הפניקס.",
+    "sources": [],
+    "status": "not_found",
+    "top_score": 0.799334704875946,
+    "model": null,
+    "standalone": "איך מחשבים שטח של מעגל?",
+    "seconds": 0.5,
+    "verdict": "עבר"
+  },
+  {
+    "id": 26,
+    "type": "personal",
+    "question": "האם הפוליסה שלי מכסה את הנזק?",
+    "answer": "אפשר להסביר מה הכיסוי כולל לפי האתר, אבל את הפוליסה האישית שלך בודקים בשירות הלקוחות.",
+    "sources": [],
+    "status": "personal_only",
+    "top_score": 0.8644920587539673,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "האם הפוליסה שלי מכסה את הנזק?",
+    "seconds": 1.5,
+    "verdict": "עבר"
+  },
+  {
+    "id": 27,
+    "type": "personal",
+    "question": "מה סטטוס התביעה שלי?",
+    "answer": "אפשר להסביר מה הכיסוי כולל לפי האתר, אבל את הפוליסה האישית שלך בודקים בשירות הלקוחות.",
+    "sources": [],
+    "status": "personal_only",
+    "top_score": 0.8581017255783081,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "מה סטטוס התביעה שלי?",
+    "seconds": 1.4,
+    "verdict": "עבר"
+  },
+  {
+    "id": 28,
+    "type": "personal",
+    "question": "כמה שילמתי השנה על הביטוח שלי?",
+    "answer": "אפשר להסביר מה הכיסוי כולל לפי האתר, אבל את הפוליסה האישית שלך בודקים בשירות הלקוחות.",
+    "sources": [],
+    "status": "personal_only",
+    "top_score": 0.8883503675460815,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "מה סך הפרמיה ששילמתי עבור הביטוח שלי השנה?",
+    "seconds": 1.4,
+    "verdict": "עבר"
+  },
+  {
+    "id": 29,
+    "type": "personal",
+    "question": "האם כדאי לי להגדיל את הכיסוי בפוליסה שלי?",
+    "answer": "אפשר להסביר מה הכיסוי כולל לפי האתר, אבל את הפוליסה האישית שלך בודקים בשירות הלקוחות.",
+    "sources": [],
+    "status": "personal_only",
+    "top_score": 0.8876844644546509,
+    "model": "gemini-3.5-flash-lite",
+    "standalone": "האם כדאי לי להגדיל את סכום הביטוח בפוליסה שלי?",
+    "seconds": 1.6,
+    "verdict": "עבר"
+  }
+]

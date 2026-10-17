@@ -1,0 +1,34 @@
+[
+    {"id": 1, "type": "in", "question": "יש לי נזילה בבית, איך אני מגישה תביעה?", "expect_any": ["claims-appartment-insurance", "apartment-information"]},
+    {"id": 2, "type": "in", "question": "ותוך כמה זמן מקבלים תשובה?", "follow_up_of": 1, "expect_any": ["when-apartment-insurance-claim", "claims-appartment-insurance"]},
+    {"id": 3, "type": "in", "question": "מה עושים כשיש הצפה בדירה?", "expect_any": ["flood"]},
+    {"id": 4, "type": "in", "question": "האם ביטוח דירה מכסה נזקי מים?", "expect_any": ["water", "apartment-insurance"]},
+    {"id": 5, "type": "in", "question": "מה זה ביטוח תכולה?", "expect_any": ["content"]},
+    {"id": 6, "type": "in", "question": "מה לא מכוסה בביטוח תכולה?", "expect_any": ["content"]},
+    {"id": 7, "type": "in", "question": "אילו הרחבות אפשר להוסיף לביטוח תכולת דירה?", "expect_any": ["extension", "content"]},
+    {"id": 8, "type": "in", "question": "מה כולל ביטוח מבנה?", "expect_any": ["structure", "apartment"]},
+    {"id": 9, "type": "in", "question": "האם הביטוח מכסה פריצה לדירה?", "expect_any": ["break-in", "apartment-insurance", "home-insurance"]},
+    {"id": 10, "type": "in", "question": "מה עושים אחרי פריצה לבית?", "expect_any": ["break-in"]},
+    {"id": 11, "type": "in", "question": "איך מתכוננים לחורף כדי למנוע נזקי רטיבות בבית?", "expect_any": ["winter", "wetness", "water"]},
+    {"id": 12, "type": "in", "question": "איך מגישים תביעה בביטוח רכב?", "expect_any": ["claims-car-insurance"]},
+    {"id": 13, "type": "in", "question": "מה ההבדל בין ביטוח מקיף לביטוח צד ג?", "expect_any": ["comprehensive", "car-insurance"]},
+    {"id": 14, "type": "in", "question": "איך מגישים תביעת רכב חובה בגין תאונת דרכים?", "expect_any": ["compulsory", "claims-car-insurance"]},
+    {"id": 15, "type": "in", "question": "איך מגישים תביעה בגין נכות מתאונה?", "expect_any": ["invalidity", "claims-life-insurance"]},
+    {"id": 16, "type": "in", "question": "אילו מסמכים צריך לצרף לתביעה בביטוח דירה?", "expect_any": ["claims-appartment-insurance", "apartment-information"]},
+  
+    {"id": 17, "type": "near", "question": "כמה עולה ביטוח דירה לדירה של 100 מטר בתל אביב?"},
+    {"id": 18, "type": "near", "question": "איזו חברת ביטוח היא הכי טובה בישראל?"},
+    {"id": 19, "type": "near", "question": "מה מחיר המניה של הפניקס היום?"},
+    {"id": 20, "type": "near", "question": "האם כדאי לי לעבור לחברת ביטוח אחרת?"},
+  
+    {"id": 21, "type": "out", "question": "איך מכינים עוגת שוקולד?"},
+    {"id": 22, "type": "out", "question": "מהי בירת צרפת?"},
+    {"id": 23, "type": "out", "question": "איך מתקנים תקלה במחשב נייד?"},
+    {"id": 24, "type": "out", "question": "מה מזג האוויר מחר?"},
+    {"id": 25, "type": "out", "question": "איך מחשבים שטח של מעגל?"},
+  
+    {"id": 26, "type": "personal", "question": "האם הפוליסה שלי מכסה את הנזק?"},
+    {"id": 27, "type": "personal", "question": "מה סטטוס התביעה שלי?"},
+    {"id": 28, "type": "personal", "question": "כמה שילמתי השנה על הביטוח שלי?"},
+    {"id": 29, "type": "personal", "question": "האם כדאי לי להגדיל את הכיסוי בפוליסה שלי?"}
+  ]
