@@ -53,7 +53,7 @@ REWRITE_MODELS = [
     ("gemini-3.8-flash", "low"),
 ]
 
-LLM_TIMEOUT_MS = 20000  # קריאה שנתקעת יותר מ-20 שניות נחשבת כושלת, ועוברים למודל הבא
+LLM_TIMEOUT_MS = 12000  # קריאה שנתקעת יותר מ-20 שניות נחשבת כושלת, ועוברים למודל הבא
 COOLDOWN_QUOTA_SEC = 120   # מודל שחרג מהמכסה (429): מדלגים עליו כך הרבה זמן
 COOLDOWN_SLOW_SEC = 120    # מודל שנתקע או נכשל בזמן קצוב: מדלגים עליו כך הרבה זמן
 COOLDOWN_BUSY_SEC = 30     # מודל עמוס (503): מדלגים עליו כך הרבה זמן
@@ -197,9 +197,6 @@ def call_llm(prompt, json_mode, models=None, validate=None):
                     _cooldown[key] = time.time() + COOLDOWN_QUOTA_SEC
                     break
                 if code in ("503", "500") or "UNAVAILABLE" in msg:
-                    if attempt == 1:
-                        time.sleep(1)
-                        continue
                     _cooldown[key] = time.time() + COOLDOWN_BUSY_SEC
                     break
                 _cooldown[key] = time.time() + COOLDOWN_SLOW_SEC
