@@ -16,6 +16,7 @@ rag.py - שכבת התשובה של בוט הפניקס.
 import json
 import os
 import re
+import unicodedata
 import sys
 import time
 from pathlib import Path
@@ -47,8 +48,8 @@ ANSWER_MODELS = [
 
 # ניסוח מחדש הוא משימה פשוטה, אז מתחילים במודלים המהירים
 REWRITE_MODELS = [
-    ("gemini-3.1-flash-lite", None),
     ("gemini-3.5-flash-lite", None),
+    ("gemini-3.1-flash-lite", None),
     ("gemini-3.8-flash", "low"),
 ]
 
@@ -57,7 +58,7 @@ COOLDOWN_QUOTA_SEC = 120   # מודל שחרג מהמכסה (429): מדלגים 
 COOLDOWN_SLOW_SEC = 120    # מודל שנתקע או נכשל בזמן קצוב: מדלגים עליו כך הרבה זמן
 COOLDOWN_BUSY_SEC = 30     # מודל עמוס (503): מדלגים עליו כך הרבה זמן
 
-TOP_K = 8               # כמה קטעים נשלחים למודל
+TOP_K = 17               # כמה קטעים נשלחים למודל
 MAX_PER_URL = 4         # מקסימום קטעים מאותו עמוד
 MIN_SCORE = 0.85       # שער גס. ההכרעה הסופית נשארת למודל השפה
 REWRITE = True          # ניסוח מחדש של כל שאלה
@@ -164,10 +165,10 @@ def call_llm(prompt, json_mode, models=None, validate=None):
     candidates = models or ANSWER_MODELS
     now = time.time()
     active = [m for m in candidates if _cooldown.get(m, 0) <= now]
-    if not active:
-        active = list(candidates)
+    cooled = [m for m in candidates if m not in active]
+    order = active + cooled  # מודלים מושהים נוספים בסוף, כמוצא אחרון
 
-    for model, thinking in active:
+    for model, thinking in order:
         key = (model, thinking)
         for attempt in (1, 2):
             try:
@@ -206,9 +207,17 @@ def call_llm(prompt, json_mode, models=None, validate=None):
     return None, None
 
 
+def _has_garbled_chars(text):
+    """תווים לא חוקיים שמודלים קלים לפעמים מייצרים בעברית."""
+    return any(unicodedata.category(ch) in ("Cn", "Co", "Cs") for ch in text)
+
+_NIKUD = re.compile(r"[\u0591-\u05C7]")
 def _valid_answer_json(text):
     data = parse_json(text)
-    return bool(data) and data.get("status") in ("answered", "not_found", "personal_only")
+    if not data or data.get("status") not in ("answered", "not_found", "personal_only"):
+        return False
+    ans = str(data.get("answer", ""))
+    return not _has_garbled_chars(ans) and not _NIKUD.search(ans)
 
 
 def _clean_used(raw, n):
