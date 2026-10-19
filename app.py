@@ -29,12 +29,27 @@ DISCLAIMER = (
 )
 SITE_URL = "https://www.fnx.co.il"
 
-SUGGESTIONS = [
-    ("🏠", "מה זה ביטוח תכולה?"),
-    ("🚗", "איך מגישים תביעה בביטוח רכב?"),
-    ("🔒", "מה עושים אחרי פריצה לבית?"),
-    ("📄", "אילו מסמכים צריך לצרף לתביעה בביטוח דירה?"),
+# הצעות לשאלות המשך (כולן שאלות שנבדקו ויש להן תשובה באתר)
+FOLLOWUPS_APARTMENT = [
+    "מה זה ביטוח תכולה?",
+    "מה לא מכוסה בביטוח תכולה?",
+    "אילו הרחבות אפשר להוסיף לביטוח תכולת דירה?",
+    "מה כולל ביטוח מבנה?",
+    "האם ביטוח דירה מכסה נזקי מים?",
+    "האם הביטוח מכסה פריצה לדירה?",
+    "מה עושים אחרי פריצה לבית?",
+    "אילו מסמכים צריך לצרף לתביעה בביטוח דירה?",
+    "מה עושים כשיש הצפה בדירה?",
+    "איך מתכוננים לחורף כדי למנוע נזקי רטיבות בבית?",
 ]
+FOLLOWUPS_CAR = [
+    "איך מגישים תביעה בביטוח רכב?",
+    "מה ההבדל בין ביטוח מקיף לביטוח צד ג?",
+    "איך מגישים תביעת רכב חובה בגין תאונת דרכים?",
+]
+FOLLOWUPS_OTHER = ["איך מגישים תביעה בגין נכות מתאונה?"]
+CAR_WORDS = re.compile(r"רכב|מקיף|צד ג|חובה|תאונת דרכים")
+HOME_WORDS = re.compile(r"דירה|בית|תכולה|מבנה|פריצה|נזילה|הצפה|רטיבות|חורף")
 
 GREETING = (
     "שלום 👋 אני עוזר דיגיטלי שעונה על שאלות על ביטוח ועל הגשת תביעות, "
@@ -42,6 +57,7 @@ GREETING = (
 )
 BUSY_MSG = "השירות עמוס כרגע. אפשר לנסות שוב בעוד רגע."
 NOT_FOUND_HINT = ""
+
 st.set_page_config(
     page_title=APP_TITLE,
     page_icon=str(LOGO) if HAS_LOGO else "💬",
@@ -63,13 +79,13 @@ def logo_data_uri():
 st.markdown(
     """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&display=swap');
 :root {
   --brand: #E4572E; --brand-dark: #C4411B; --brand-soft: #FDEEE8;
   --navy: #2B2D7F; --ink: #1F2933; --muted: #7B8794; --line: #ECE6E0; --wall: #F4EFEA;
 }
 html, body, .stApp, .stMarkdown, button, input, textarea {
-  direction: rtl; font-family: 'Heebo', sans-serif !important;
+  direction: rtl; font-family: 'Assistant', sans-serif !important;
 }
 .stApp { background: radial-gradient(1200px 500px at 50% -100px, #FFE3D6 0%, #F3F0EC 60%) fixed; }
 [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stAppDeployButton"],
@@ -82,41 +98,83 @@ html, body, .stApp, .stMarkdown, button, input, textarea {
   padding: 0 0 120px 0 !important; overflow-y: auto; overflow-x: hidden;
   background-color: var(--wall);
   background-image: radial-gradient(#E6DCD2 1.2px, transparent 1.2px); background-size: 20px 20px;
-  border-radius: 28px;
-  box-shadow: 0 20px 60px rgba(43,45,127,.20), 0 0 0 8px #fff, 0 0 0 9px #E8E2DC;
-  scrollbar-width: thin;
+  border-radius: 38px;
+  box-shadow: 0 24px 60px rgba(43,45,127,.28), 0 0 0 10px #17181F, 0 0 0 11px #3B3D4A;
+  scrollbar-width: none;
 }
+.block-container::-webkit-scrollbar { display: none; }
 @media (max-width: 480px) {
   .block-container { height: 100dvh; margin: 0 auto !important; border-radius: 0; box-shadow: none; }
 }
 .block-container > div > div { padding-inline: 14px; }
 
-/* כותרת עליונה */
-.topbar {
-  display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #fff;
-  border-bottom: 3px solid var(--brand); margin: 0 -14px 14px -14px;
-  box-shadow: 0 2px 10px rgba(0,0,0,.05); 
+/* כותרת עליונה: שורת מצב של טלפון (עם חור מצלמה) ומתחתיה כותרת האתר */
+.phonetop { position: relative; margin: 0 -14px 14px -14px; box-shadow: 0 4px 14px rgba(43,45,127,.08);
+  background: linear-gradient(180deg, #fff 0%, #FFF6F1 100%); border-bottom: 3px solid var(--brand); }
+.statusbar {
+  direction: ltr; position: absolute; top: 0; left: 0; right: 0; z-index: 2; height: 30px; padding: 0 22px;
+  background: transparent; pointer-events: none;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .78rem; font-weight: 700; color: #1F2933; letter-spacing: .2px;
 }
-[data-testid="stElementContainer"]:has(.topbar) { position: sticky; top: 0; z-index: 50; }
-.topbar img { height: 34px; width: auto; display: block; }
-.topbar .sep { width: 1px; height: 30px; background: var(--line); }
-.topbar .t1 { font-weight: 800; color: var(--navy); font-size: 1.05rem; line-height: 1.15; }
-.topbar .t2 { color: var(--muted); font-size: .78rem; display: flex; align-items: center; gap: 5px; }
-.topbar .dot { width: 8px; height: 8px; border-radius: 50%; background: #22C55E; display: inline-block; }
+.statusbar .cam {
+  position: absolute; left: 50%; top: 9px; transform: translateX(-50%);
+  width: 13px; height: 13px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #3a3f5c 0 18%, #0b0c12 45%);
+  box-shadow: 0 0 0 2px #14151c;
+}
+.statusbar .icons { display: flex; align-items: center; gap: 5px; }
+.statusbar svg { display: block; }
+@media (max-width: 480px) { .statusbar { display: none; } .topbar { padding: 12px 14px !important; gap: 10px; } .topbar .t2 { font-size: .76rem; } }
+.topbar {
+  display: flex; align-items: center; gap: 14px; padding: 38px 18px 14px; margin: 0;
+  background: transparent;
+}
+/* הכותרת קבועה לראש המסגרת (לא תלויה במיקום בתוך הדף), והתוכן גולל מתחתיה */
+[data-testid="stElementContainer"]:has(.phonetop) {
+  position: fixed !important; top: 1rem; left: 50%; transform: translateX(-50%);
+  width: min(430px, 100vw) !important; z-index: 50; margin: 0 !important; padding: 0 !important;
+}
+.phonetop { margin: 0 !important; border-radius: 38px 38px 0 0; }
+.block-container { padding-top: 98px !important; }
+@media (max-width: 480px) {
+  [data-testid="stElementContainer"]:has(.phonetop) { top: 0; }
+  .phonetop { border-radius: 0; }
+  .block-container { padding-top: 76px !important; }
+}
+.topbar img { height: 38px; width: auto; display: block; mix-blend-mode: multiply; }
+.topbar .sep { width: 1px; height: 34px; background: #E7DCD3; }
+.topbar .txt { flex: 1; text-align: center; }
+.topbar .t1 { font-weight: 700; color: var(--navy); font-size: 1.35rem; line-height: 1.2; letter-spacing: .2px; }
+.topbar .t2 { color: #6B7280; font-size: .86rem; font-weight: 400; margin-top: 3px; }
+
+
+/* הצעות לשאלות נוספות */
+.followups-title { font-size: .9rem; font-weight: 600; color: #4A5568; margin: 10px 4px 6px; }
+.st-key-followups { background: #fff; border-radius: 16px; padding: 10px 12px 12px; margin-top: 6px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.06); }
+.st-key-followups [data-testid="stElementContainer"] { width: 100%; }
+.st-key-followups .stButton { display: flex; justify-content: flex-start; }
+.st-key-followups .stButton > button {
+  width: auto; max-width: 100%; border-radius: 999px; padding: 6px 16px; min-height: 0;
+  background: #fff; border: 1px solid #C9CDF0; color: var(--navy); font-weight: 500;
+}
+.st-key-followups .stButton > button:hover { background: #F2F3FF; border-color: var(--navy); color: var(--navy); }
+.st-key-followups .stButton > button p { text-align: right; }
 
 /* בועות */
 .row { display: flex; margin: 6px 0; }
-.row.user { justify-content: flex-start; }
-.row.bot { justify-content: flex-end; }
+.row.bot { justify-content: flex-start; }   /* בעברית ההתחלה היא מימין */
+.row.user { justify-content: flex-end; }
 .bubble {
   max-width: 86%; padding: 10px 14px 8px 14px; font-size: .98rem; line-height: 1.7;
   box-shadow: 0 1px 2px rgba(0,0,0,.08); word-wrap: break-word; color: var(--ink);
 }
 .row.user .bubble {
   background: linear-gradient(135deg, #E4572E, #EE7A4E); color: #fff;
-  border-radius: 18px 18px 4px 18px;
+  border-radius: 18px 18px 18px 4px;
 }
-.row.bot .bubble { background: #fff; border-radius: 18px 18px 18px 4px; }
+.row.bot .bubble { background: #fff; border-radius: 18px 18px 4px 18px; text-align: right; direction: rtl; }
 .row.bot .bubble.info { background: #F1F5F9; }
 .row.bot .bubble.warn { background: #FFF6DD; color: #6B4E00; }
 .time { font-size: .68rem; opacity: .6; margin-top: 2px; text-align: end; }
@@ -148,6 +206,28 @@ a.chip .n { background: #fff; border-radius: 50%; width: 18px; height: 18px; fon
 .stButton > button:hover { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-dark); }
 .stButton > button p { text-align: right; }
 
+/* כפתור שאלה בקול: אייקון בלי עיגול, בתוך תיבת הכתיבה, מימין לכפתור השליחה */
+[data-testid="stElementContainer"]:has([data-testid="stPopover"]), [data-testid="stLayoutWrapper"]:has(> [data-testid="stPopover"]) {
+  position: fixed !important; bottom: 74px; left: calc(50% - 145px);
+  z-index: 300; width: 32px !important; min-width: 0 !important; margin: 0 !important; padding: 0 !important; gap: 0 !important;
+}
+[data-testid="stPopover"] { width: 32px; }
+[data-testid="stPopover"] button {
+  width: 32px; height: 32px; min-height: 32px; border-radius: 50%; padding: 0 !important;
+  background: transparent !important; border: none !important; box-shadow: none !important; color: var(--brand);
+  display: flex !important; align-items: center; justify-content: center;
+}
+[data-testid="stPopover"] button:hover { background: var(--brand-soft) !important; transform: none; }
+[data-testid="stPopover"] button div[aria-hidden="true"], [data-testid="stPopover"] button [data-testid="stMarkdownContainer"] { display: none !important; }
+[data-testid="stPopover"] button > div, [data-testid="stPopover"] button > div > div, [data-testid="stPopover"] button span {
+  display: flex; align-items: center; justify-content: center; margin: 0 !important; padding: 0 !important; width: auto; gap: 0 !important;
+}
+[data-testid="stPopover"] button [data-testid="stIconMaterial"] { font-size: 1.5rem; color: var(--brand); line-height: 1; }
+[data-testid="stPopoverBody"] { min-width: 300px; direction: rtl; }
+@media (max-width: 480px) {
+  [data-testid="stElementContainer"]:has([data-testid="stPopover"]), [data-testid="stLayoutWrapper"]:has(> [data-testid="stPopover"]) { left: 84px; bottom: 38px; }
+}
+
 /* קלט הודעה: בתוך המסגרת, בתחתית */
 [data-testid="stBottom"] { position: fixed !important; bottom: 0; left: 0; right: 0; width: 100%; z-index: 100; }
 [data-testid="stBottom"], [data-testid="stBottom"] > div { background: transparent !important; }
@@ -161,10 +241,18 @@ a.chip .n { background: #fff; border-radius: 50%; width: 18px; height: 18px; fon
 [data-testid="stChatInput"] {
   background: #fff; border-radius: 999px; border: 1px solid #E5DED7; box-shadow: 0 2px 10px rgba(0,0,0,.10);
 }
-[data-testid="stChatInput"] textarea { font-size: 1rem; }
+[data-testid="stChatInput"] textarea { font-size: 1rem; padding-left: 44px !important; }
 [data-testid="stChatInputSubmitButton"] { background: var(--brand) !important; color: #fff !important; border-radius: 50%; }
 
 [data-testid="stExpander"] { background: #fff; border-radius: 14px; border: 1px solid var(--line); }
+[data-testid="stExpander"] summary { justify-content: center; text-align: center; }
+[data-testid="stExpander"] summary { position: relative; }
+[data-testid="stExpander"] summary > span { width: 100%; justify-content: center; }
+[data-testid="stExpander"] summary > span > span:first-child { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+[data-testid="stExpander"] summary [data-testid="stMarkdownContainer"] { text-align: center !important; width: 100%; }
+[data-testid="stExpander"] summary p { text-align: center; }
+[data-testid="stExpander"] [data-testid="stExpanderDetails"],
+[data-testid="stExpander"] [data-testid="stExpanderDetails"] * { text-align: right !important; direction: rtl; }
 .disclaimer { color: var(--muted); font-size: .7rem; text-align: center; margin: 16px 6px 0 6px; line-height: 1.5; }
 a { color: var(--brand-dark); }
 </style>
@@ -299,14 +387,43 @@ def render(msg, is_last=False):
 # ---------- כותרת עליונה ----------
 logo = logo_data_uri()
 logo_html = f'<img src="{logo}" alt="הפניקס"><div class="sep"></div>' if logo else ""
+STATUS_ICONS = (
+    '<svg width="16" height="11" viewBox="0 0 16 11" fill="#1F2933"><rect x="0" y="7" width="3" height="4" rx="1"/>'
+    '<rect x="4.3" y="4.7" width="3" height="6.3" rx="1"/><rect x="8.6" y="2.3" width="3" height="8.7" rx="1"/>'
+    '<rect x="12.9" y="0" width="3" height="11" rx="1"/></svg>'
+    '<svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#1F2933" stroke-width="1.8" stroke-linecap="round">'
+    '<path d="M1.5 4.2a9.5 9.5 0 0 1 13 0"/><path d="M3.8 6.8a6.2 6.2 0 0 1 8.4 0"/><circle cx="8" cy="9.6" r="1" fill="#1F2933"/></svg>'
+    '<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".7" y=".7" width="21" height="10.6" rx="3" stroke="#1F2933" stroke-width="1.2"/>'
+    '<rect x="2.4" y="2.4" width="15" height="7.2" rx="1.6" fill="#1F2933"/><rect x="22.8" y="3.8" width="1.6" height="4.4" rx=".8" fill="#1F2933"/></svg>'
+)
 st.markdown(
-    f'<div class="topbar">{logo_html}<div><div class="t1">{APP_TITLE}</div>'
-    f'<div class="t2"><span class="dot"></span>{APP_SUBTITLE}</div></div></div>',
+    f'<div class="phonetop"><div class="statusbar"><span>{now_str()}</span><span class="cam"></span>'
+    f'<span class="icons">{STATUS_ICONS}</span></div>'
+    f'<div class="topbar">{logo_html}<div class="txt"><div class="t1">{APP_TITLE}</div>'
+    f'<div class="t2">{APP_SUBTITLE}</div></div></div></div>',
     unsafe_allow_html=True,
 )
 
+# ---------- שאלה בקול ----------
+# אחרי כל הקלטה מחליפים את המפתחות, כדי שהחלון ייסגר וההקלטה תתנקה
+vn = st.session_state.get("voice_n", 0)
+with st.popover(" ", icon=":material/mic:", key=f"voice_pop_{vn}"):
+    st.caption("לוחצים על המיקרופון, מדברים, ולוחצים שוב לעצירה. השאלה תופיע בצ'אט כפי שהובנה.")
+    audio = st.audio_input("הקלטה", key=f"voice_rec_{vn}", label_visibility="collapsed")
+if audio is not None:
+    with st.spinner("מתמלל..."):
+        heard = rag.transcribe(audio.getvalue())
+    st.session_state.voice_n = vn + 1
+    if heard:
+        st.session_state.pending = heard
+    else:
+        st.session_state.voice_error = True
+    st.rerun()
+if st.session_state.pop("voice_error", False):
+    st.warning("לא הצלחתי להבין את ההקלטה. אפשר לנסות שוב או לכתוב את השאלה.")
+
 # ---------- קלט ----------
-typed = st.chat_input("כתבו הודעה...")
+typed = st.chat_input("יש לך שאלה? אני כאן בשבילך 🙂")
 question = typed or st.session_state.pop("pending", None)
 
 msgs = st.session_state.messages
@@ -315,8 +432,6 @@ msgs = st.session_state.messages
 if not msgs and not question:
     bubble("bot", text_html(GREETING), t=now_str())
     st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
-    for i, (ico, s) in enumerate(SUGGESTIONS):
-        st.button(f"{ico}  {s}", key=f"sugg_{i}", on_click=ask, args=(s,), use_container_width=True)
     with st.expander("ℹ️ מה אפשר ומה אי אפשר לשאול"):
         st.markdown(
             "**אפשר:** מה כוללת פוליסה, איך מגישים תביעה, אילו מסמכים צריך, "
@@ -356,6 +471,41 @@ if question:
     }
     st.session_state.messages.append(bot_msg)
     render(bot_msg, is_last=True)
+
+# ---------- הצעות לשאלות נוספות ----------
+def followup_questions(msgs, n=3):
+    asked = {m["content"] for m in msgs if m["role"] == "user"}
+    last_q = next((m["content"] for m in reversed(msgs) if m["role"] == "user"), "")
+    last_a = msgs[-1].get("content", "")
+    text = last_q + " " + last_a
+    is_car, is_home = bool(CAR_WORDS.search(text)), bool(HOME_WORDS.search(text))
+    if is_car and not is_home:
+        pools = [FOLLOWUPS_CAR, FOLLOWUPS_OTHER, FOLLOWUPS_APARTMENT]
+    elif is_home and not is_car:
+        pools = [FOLLOWUPS_APARTMENT, FOLLOWUPS_CAR, FOLLOWUPS_OTHER]
+    else:
+        pools = [FOLLOWUPS_CAR[:1] + FOLLOWUPS_APARTMENT[:1], FOLLOWUPS_OTHER, FOLLOWUPS_APARTMENT, FOLLOWUPS_CAR]
+    out = []
+    for pool in pools:
+        for q in pool:
+            if q not in asked and q not in out:
+                out.append(q)
+            if len(out) == n:
+                return out
+    return out
+
+
+if (
+    st.session_state.messages
+    and st.session_state.messages[-1]["role"] == "assistant"
+    and st.session_state.messages[-1].get("status") != "llm_unavailable"
+):
+    suggestions = followup_questions(st.session_state.messages)
+    if suggestions:
+        with st.container(key="followups"):
+            st.markdown('<div class="followups-title">הצעות לשאלות נוספות:</div>', unsafe_allow_html=True)
+            for i, q in enumerate(suggestions):
+                st.button(q, key=f"fu_{len(st.session_state.messages)}_{i}", on_click=ask, args=(q,))
 
 # ---------- גלילה אוטומטית לסוף השיחה (בתוך המסגרת) ----------
 components.html(
