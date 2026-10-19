@@ -1,19 +1,28 @@
 """
-app.py - ממשק הצ'אט (Streamlit).
+app.py - ממשק הצ'אט (Streamlit), בעיצוב של אפליקציית הודעות בטלפון.
 הרצה:  python -m streamlit run app.py
-לוגו (לא חובה): assets/logo.png
+לוגו: assets/logo.png (אם הקובץ קיים הוא מוצג בראש הצ'אט)
 """
+import base64
+import html
+import json
+import re
+from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 import rag
 
 LOGO = Path("assets/logo.png")
 HAS_LOGO = LOGO.exists()
+# לוגו מוטמע (גיבוי, אם הקובץ assets/logo.png לא קיים)
+LOGO_B64 = "iVBORw0KGgoAAAANSUhEUgAAAZkAAACTCAIAAADTK/NLAAAnNUlEQVR4nO2deVwT1/r/z8xkskwgA5KgIAZQXHCBFqw7uC+t2kW97tpq1S7aq13sYmuv39rFbvfeWu3e3rp3sdpW26qtyxXrDhZEcUExUQlCWBKSIclkJr8/0p/1IknOZE847794JWd5yPLJOc95zvNgQ4YMAQg4HKwV2O282Qg41mGzALsdOPhmbfCEJJxOCIl5CERrBnM4HKG2Iazh66rsFWfZs8e46qsO1gY4ljcbgZ112KyAY2/XMlF6z5j5K3EFkjMEIqiIQm1AmOHgeUMdV621lxdzVy/azhx1WBlBA9g15/j6GqRlCESQQVr2J5yuwl5x1np4B2+s42p1wM56N44orTuhSvGvbQgEwiOtW8scPF93w1Z62HZ8D1te7M0IGI7JFbhcQSSlk53vIHv0I5LS/W0lAoHwTGvVMjvLnjlqObzTfvUCX6vzZgQRKe7eT3xHvii9B0YpcLoNwHB/W4lAIGBpdVrGN+jtV840/bLefuWMF91xRQKuSpbkDCOz89BeEoEIH1qTltlZy4GtloPbueprt58/egSX05JB90kGjMXjEzGJLBAGIhAIr2kVWuYwG9nyYubb1VzNVaF9MVJMJKWTne+UjZ2LyRWBMA+BQPhOtGuZnbUe/7Xpt82crgLwnNDe4h79pMMmizKyMak8ENYhEAh/Eb1a5uC56mvM1/+0nTkquC9OEEnpshHTJX1GAhEZAOMQCISfiVota9q1wbL/W96gF9oRl9PU3/4uzspDO0oEIoKIQi3jrpWbt7ztRbwYJqHI7n3k05eiqH0EIuKILi2zs5YDW5t2b+SNtUK7ilK6UBMXkl1y0KYSgYhEokfLeGNt08//sezfKrQjRorFOcNi5q7wv00IBCJYRImWcdXXTJ8tt2vKhHbE5TQ15UlxzrBAWIVAIIJG5GuZg2fPFZo3veVF7BjZvW/MrGV4m7aBsAuBQASTiNcya9F+8/rXHRazsG4iUjpkEnXvAhTBj0BEB5GsZTxnLdxn+my50H6YhJINnyIbOxe5+RGIqCGCtcxy8Htm2xqhvTC5ImbWMvGdQ/xvEAKBCB2RqWV2tmnXBmbHJ0L74W3axi54Q5TePRBGIRCIEBKRWmYt2t+0e73QXnibtrGPrhKlZgbCJAQCEVoiTcucPrLPXxba788VGRIyBCJKiTAtY8+dNG94XWivwK3IKnX1hgaGFBNxNEWSIpqm/D4FAoGAIZK0zH7lrHnzOw5rk6BemISKmfmCj0JWVdWg1zfW6I0lp7Uajb7ktMZgYBoMLZRoUiljaVrer2/n7Cx1bKwsI6NdQpsYipLgOOaLAQgEwj0RUx+Tq77WuPYZruqKoF6YhIqZtUx81wiv592xs3DHT0WXL9+o0TcyjFVQX4LAVUpFQkIMRUkenjM0Py+TJAmvLUEgEG6IEC2zs+at7wm+aykiZcOmUhMXCp2tttak0dZs2358x09FQvXLDalq5YQH+vTr27lL5yS0UkMg/EtkaJnlty3mb98T2ks6YprQyH6GsW7YVPD9Dyc12hqWFZyHFgaKkqSnqab8rf89d9+J/GsIhL+IAC1jLxQ1rnlGaP1wUWpm7KJ34DORGQzM3n2lH3y0R6MVnL7ROzK7tX9k/vChQ3pQlCQ4MyIQUUy4a5nDbDSsmstVXxPUC5fTiuc/JxJha74dLCh7690d5eVVHCe4PpMvUJSkV88OC+YNz89DwSIIhE+Et5bZWdOGN6xHfxbUCSPF8lnLJH3HwDSu0Rs//Xzfxk0FAdpRQvLUkrGPzB+BPGgIhNeEdUwGp7tiKy4Q2kucMwwyH1nJae0/Xvm2tFRwsiD3xNGUOlWZ2kGVnBRHx8lvPbtkWU6jqdFe1Ws0eoax3ozqOH1a618bEIjWRvhqmcPaZNq4ytHUKKgXrkiQjZ+HkWL3zaxWdtee4mee3eiDgX8SR1OJiTRNUyOH91Krlb1zO0J69FmW02hrGLOtwWDOzkpFizIEwhfCV8ss+7far5wR1kdEyqcvJVSe3WQvLv96154/vDPMSRxNjR+b269f51S10qllQsWIJImMTu18sQGBQNwkTLWMq7lu+a/gzP1klxyye1/3bfR64z9e2brn1xLvDIujqa5dk6f8rX9+XiaKqEAgwocw1bKm3Rv4uhtCe8XMWuY+msxgYP7xyta9+0q9MClVrZwyeUD+oG4dOiSgKAoEItwIRy3jjbXWgu+F9cFwasJC95n7vVuREQSemqqccH+fWTPykIQhEGFLOGoZ8/W/hXbB27SV5Ho4u/RiRRZHUy88d39eXjeVEtUwRyDCmrDTMq5Kw14oEtpLmj8BT0hy9SzLcm+986OgFRlFSQYN7Lri5UlIxRCIiCDstMxWXCC06jih6iAdOslNg127//j6myPwA6aqla+tnJpzZzpKa4FARArhpWUOs9Gye4OwPjghG/uQG5d/yWntU0thx5RIRGNG3fHOWzOF2YBAIEJNeGmZZf9W3mwQ1AVv047s2tvVswYD89ob2yGHiqOpl16cMGZUtiADEAhEOBBGWuZgTLY/DgjtJerQ2c3x5TdbjxadqoAZp2fPDv9+98FUtVKoAQgEIhwIoJZxugr2zFHebJQOnQSTe4eruSY0HwYAgBr7sKunNFr9mg92wwwyfmzuC8/fh9z8CETk4icts7O8yQA4ljcZ+Loq2/E9tjNHb2Ycs536b9xL6zwWCbce3ik0SZmkz2iiQ+eWR7Oyr762DSYr7Nh77nz1lckodgyBiGhE9qsXmj2EiUhM3sIKhTfUAgAchjoAgPOoka+7wTNG7uoFB8c6TAaHnXWYDLfrEVdzlWeMHpdm1hN7hFov7jPK1VNHj108cqz5v9YMkiRmzshb8sTdSMgQiEhHZHh1dqDnwAjSo5DZCvc7zEZBw+IJSaLkjq6eXbfhoNVqdz/CqJFZSMgQiOggGL5/yV0uV083sZ6AcmzdCtGmrSuv/8GCsoJD59x3nzk9b+nT45CQIRDRAR7oCTCJTJJ/n/s2fH01d61c6MiSAfcCrAX7ed7x1deH3fcdOqQHEjIEIpoIuJaJc4aJOnRx34Y31vHGOqEjS/qMbPFxna6+7Nx1Nx1T1crXVk5BQoZARBOi2AVvWE/s5utu8MZavrEe2Fl/DY2RYnHOsJiHlntsyddVeXGC6epg9MDBs9euu1RGmqbWrp6Lwi8QiChDJM4dKs4d6rA28YZavqGaLS6wHvlZaPD97RCqDvKpT4pcR+TfivW4P08wd+x0dzX9/16elJGBsrkiENHGn75/TCIjElOIxBSySw71wOPsmaPMT1/wdVV8Y71342JyBW8yOCxmj6n3AQD284WCBsdpJZHYocWnyi9VFRZdbrkXji2YN2LsPTmC5kIgEBFBS+eYIpLMzlN0683XVbEXipp2fiE0cQUAwH7ljGnDBUKVIu41SDZurpu73/aKs0KXgZhc0WIEHACguMRlQSO1WjlrxiBBEyEQiEjBZUwGJpERSelEUrqk90jr7zusJ/bYKy8L86bZWU5X0aSr4K5flI6cIcrIbnGN5kUubKKtGo+Ja2Eo3vHdtmMtdiFJYvmyCYmJtNC5EAhEROA5vgyTK6Qjp0kGjGUvn7H8toU9f1LoHLYzR9lLp8mMbGrqU7cXSWLPHhU6oCitR4uPGwyMwdDyGcLMGXmoNjgCEcXAxWRgOBYTJ84aqHhqTczsl4jkTkKncVjMttLDprVLbacONFvccdWCS+2SGVktPm5sbDIam25/nKapiff3EToLAoGIIATHl0kG3KNY/J58+lKY1BfNsOsqGj9bbt7yzk0HnMNs5AVeXQIAiNK6t/i4Xm+s0bcw2vBhPdHZJQIR3QiPlcVwPE4pHTwxbsUWSd8xMMeU/4OdtRz6wbBiOlt2wsHaHDYLsFmEzS9XuIosq6pq4Di+2YNKZeyy5+4niIBHBSMQiBDi/X1MTK6Qz1om6TPK/NW/uBph+0TebGj86HlJ/7E4FcPVC/P9u3KWAQA0Wv3tD770wgOoKC8CEfX4dLccI8VkzwGxC5OYHz62nf5d0Cmnw2K27P/Gi0ldOcsAABpNcy1LS1Pd1Vuwdw+BQEQcfth5EUnpsfNWxkzzxoPmzXS3nYS6oXOndkp0XQmBaAX4yYskIiWD7o15aDmR3LHF3BV+BKNhFZMkialTBuA4FlB7EAhEOOBP3SF79FMsXk1mBLKOkYjECJe5tg3G/wkuyx+UiWLKEIhWgp/XUHicMvaxN6lx8wSfb8KBkVIglrp6lmX/SiSL49ikiX0DYQMCgQhD/L8fxOQK6ZjZ1IRFfh8ZAICJRJgI6rxCqVR06oRiyhCI1kJAcmRjpFg6bDLACWbbGoe1hUB878EJgBMwDVPat2mbiLz+CERrIYB+emn+/bGPrvLzoCISc12bLrWD6ubfo0dlo8yxCETrIZC1S3CC7N5XseT9xo+ed1jMAZzo/6NO/avqeO8clyWaggnLcg0Gv/3vYlJEEDhFSQJxOMtxfEMDwzuaX5wIFWJS1GKQc22dyWNfEYErFDIMa/4qGQyMjW2hOpdETAIAJBIRSYoCffDNMNYGA1NXa6rU1Wu0ekODuUbfCADQ1xoBABQlSe2gVKoUcTTVvn2bOJpSKhU0TfnLKoaxmiGKxrpBIiZJMSGTBsQh7gsBr8NEdsulJiwyb34z0BMBAFLVf2pZHE1lZamDMKNHSko0y5Z/5a/RSLFIROAUJXFun5OS4rN6pY4Z7Z+D48rK+qXPb6qv96wUwSEzs/3bq2aSZHOXwqo3vy8946G+fbduyW++Pl0sbv7xfuudH08WtpCqUyL5S8vu6t0pb1C3zhnt/H5dpPxS1ZoPdmu1+oYGprbO5LEQNY5jNE2plIpUtXJA/y7jx+X6btLHn+7dtfsPX0aQSEiSJGQyMU1TYpKgaXlGp7Z+sc1HAl9TDsOlgx9wGGubdq93sDZfR3PwgHe5cEhIiJVJxU0WW25uWCzKAABmxnq5ojqgU5AkkZ2VOmxoz9yc9E4d23r9kWJZu1Zb41wjhAMKhYzneQCaa1l1jbH8UpX7vjGxLR92V91o8Ph2nDh56YOP9lCUZOaMQQ/cd1eqWnW7nsLD8w6drv7AwbMbNx3yaPbtfevrzfX15gsXdb/uPf3e+7+MGN5r5oy89DSV1/6TqirPr4AX/N+r36WqlfmDMrt3T8nN7ZjSvo0vL5p3BKM+JgBAOmY2AIDZ+ZmvA9ntDs5lBV+KElNycZPFltUrLBZlwYFluZOFl08WXiZJolvX5HFjc+c+NCTURkU8DGP95NO93313bOaMvFkz8rz+hfj409+++faIm2I68DQYmG3fH9+7v7RH95QF80b079fZ9zH9iEar37C5AMcxpVIxsH+XB+7vE2QLg5Q9wnmyKb5jsK+3Ahw8cO3QUSkVyUnxiljZoIHdfJolMmFZ7nTp1Tfe/P7ucav2/FrSYvojhCBq60zvvf/LCy9uqa4WXM2n6FTFxMn//Oe/f/KLkDlxrtQO/X5+9py1i5/8sr4+GG5oQfC8o7rasP2HE7PnrL33gbf3HzjDslxwpg5eJhxMrpBPW0okpfkyiMNud9hdrstomnpr1YyN6xdldmvvyyyRTvmlqiVPr3vy6fVIzvzC3v2lX3x5QFCXjZsKHnns05LTLqtP+M6uPcUL//7FwYKywE3hI2Xnri/8+xevvbHdVbZn/xLUrF54nDJm9kuuyo5AYbcC1p3HNKNTu8xu7YO/Vw83WJY7drz8nnGrTpy8xPOOUJsT2fC84/P/7P/w418hX8mffi56+587GwL8BeZ5x4mTl55btnnPryUBncgXWJb7ZuuR517Y3GI+Lv8S7AyFovTu8gmLMImX3geHW38ZohkNBmbJ0+v37S8NtSHRwLbvj+sh1rkbNxUsW/61xzNKf6HXNy55et3GTQXBmc4LWJbbu790zrwPhR59CCUE2VYl/e4W9xroZWcHz9fq/GpOlFNdbXjhxS2FLQUiIARx/Xrd4SMX3Lc5f75y7Ud7giZkTliWW/vRnmPHy4M5qVCuXq19ftnmgDo9QpE5WkRS9z1CqFou1usR32uqtzYaDMyyl7+q1HlZthnhxLm+cN/mX6t/1ociqEWvb1zxytYg7ON8obhE+/Y7OwIn9KHJgo8npsinPY25znjhBq48fL0DYcvly9WvrPwuyOuF6KOs7LqbU7m9+0r37hO2ncdxLD5e3iEloWvX5Mxu7TO7tU9LUyUm0l6Ej5Vfqnpx+VfB8bJ7zc6fi/YfOBOgwYMUX9bCxBnZ4qw868lfhXa0XzkbCHtCS3JSPEwEk8HAeL28OniobMOmgkfmj3DVgCRFGcFKw8sw1pAsIpLaxd8842ZZzmAwsywH76TXaPUabU2Gi/wrGzcLcFqRJJE/KPPhuUPjaEoeI5VTEueNK4vFxjC2unrT0WMXt20/LuhVOll4ee++0gkPuCufmJwc7+Mpv05X7/WxBsty/3rv55491Tev6PiRkGkZJpHJpy+1lR1zCKwp57A2OaxNmEQWIMNCwsr/mwyZNtL5DTxZWLHjp8KrV2vLL1VBxu+wLLft++MTHuijcqFWHTokrP9yoQCjfeDY8fKZD64Jzly38uorU5o9wjDWDZsKvlz/X8i9YXn5jRa17Pr1uoorNTAjSCSi/n27vPTihBa/zwqFDACQlqbKuTN9/sPDN24qWLfxoE5XD3OEynH8Bx/tGTPaXVaFxU/cvfiJu2HsdI9eb9Ro9Hv3lxYWVZw7Xwm/5Ndo9du3H1+y+B7fbWhGKCutYXIFNfZhob14s8GL8sBRA0kSSqVizOjstavnbly/aO3qudnQN081Gn1BwbmAmhdxUJTkkfkj/v3ug0plLEx7rbZlwTpy9KIObsn82sqpa1bPgVmYkCQx56EhX3722PChPWFGBs7g+6CcaSqVitzcjs8+c+/GdYv+89mjE90uBptx8FBZIPbCIa4aKek7WqTuKrSXHbnMAAAAKGJlQ4f0+HDtvL59MmDacxz/7XdHkdfsdvr2yRg2xGWtwltxtQo+fOSCx6UTQeCPPzrqvvG9nVfZIUlLU73x2rQF84ZDRk1u+/54MGOkSZLIuTN91evTn1g4RiKB2uedO195utT/y5EQaxkmV0iH/E1or6h0mXmNSqn417uzx4/NhWlcXKI5iJZmLZE3CGqP78pVZDB6vk6UnBQ/ZXJ/YWYBAACgaWruQ0Mh01jpKht0ugYvZvGRR+YPf/bpe2Fasiz3n3X7/W5AqKt5Y7j4jny8TVtBnezac7ypITAGRSQqpeLvi8aktG/jsSXLckePXQyCSRFHRgbUh9BVuGxlZYPHviqVwpWz0iMJCTHvvzcHZiPcZLEF7qzQDRIJOXtW/vBhUNvhkhKt3+9phlrLvPKa8cY6h9Fv93WjA7VaufCx0TAty85dR9vM20lVqzw3co3GhR/tVjI6tfXldh1NU4seh3qLd+ws9HoWH3n26fHJSfEemzUYGJhXTBCh1zIAAJl5F56QBN/eYTHzDX5+ISIdHMdGjugVBxHYUVlZHz5JysIHkiQCfY2XJH0NGxg5vFdammfN1Wj1JSUBvNbuhg4dlB07JsK0PHLUz/uDsNAyvE1bsmtvAR3srK04fC+ghQqapmbOyPPYzGBgwjyiMlTA/BK4AmZZBx9A4wqlUgHpNTt4KDT5M0iSmPPgEJiWp/2dRCQstAxguGzUdEEXzm0nfvVzhaeooGePDgTh4T1tstiKTlUEx57WAyX3nP/+RrXBxxTkOI49PHcoTMuyc9d9mcgXsrNSYe4tnDtfaTT68yscHloGAKFKkdw1Cr49bzawpUcCZ0+EkpHRzmvvMgxMk+2KBu3uW+DWGmCu0Gr1GzYd8nUitQpm/ajXNwYtCWIzaJrKH+Q5GSrDWP3rtw1Z3H9zRCSZNdByeAfgYd8A67FfxHcOhiyX2UqIj5PHx8urbjS4b1ZZ2XJUp8PhaGqyMYzNzFgZxmo2W6urDRqtXqvVa7R6jVZfXW1Y8sTdC+E80K2Ksffc+fOuUxznrooVzzu++vr3zMz2w4f2EBRidiskSXTq1K6wyEPiE7uds3OcFx5Au51nGKtMJvbFe5iR0Q7sKXbfhmU5/6pt2GgZAKL07kRiClelgWzPVVbwhlo8HsrR2EogxVAObFf+stfe2F50qsLM2Jy/mQxjs9tD89secThXxB5/RRoMzIvLv9qe0/GJhWO8LhWWqlZ61DKW5VgbJ4PI3mC12iuuVFdcqa6oqK6oqLleWcey9ldfmdK1S7J35oFbKqK5tdDOtlTfz2vCSMtwRYLkrtHMjk8g23P1NzhdBdKyW8ExDKaQoq6q5XXZhYu6QARktwaSk+IzM9t71DIAgMlkOXDw7O9Hzmdnpfbr2zlVrXT+/MTESPv17QyzXktO9hz00GSxWSw25+3OW2k0WYqLr1zR1FRU1Dgl7Pr1Osf/XliQycRWq08qkwQRlmG12q22KNUyAICkzyjLvq9hM5TZ2abfviK79w2wUZEESYpgDv4bGlpel3m98UGQJPHk4nvgg1RvVs+6+UhammrTukWJibTHvjApVViWs7W0g7twQTf/0U8Dvdx2Bri430L6fY8ZLr5/J3hiinTkdPhaTdyVs+z5kIUFwgDpifdXwBeOQ63LSDFyMvqfzG7tH54z1OsC4ziGYXB9Q+XUh0ckIkSEh88Y7+B517VuvSC8tAwAIM4ZCn+liTcbbMf3BNQeH6HjoAJNjH4K+IL8rfMlkArhhrkPDXGV3cwjpFgkhgumNTR4vvtJkoQ4dBV8YAKPo3xdBgAgEpLEPQfAt2cvnuIbwjc1sBwuQai/DqebmmxNTZ6Lwye18+zOQHhBYiK9ecMTMJd4bgfHMGc6Ro/ArOJFBEF4WhmFFp53+LdCWNhpGRCRshHTcLlnr4ETrvoaeyZ8A81omoJZBPmr/likrMui+OIBTVP/enc2ZDa0WyFJAnLvbzB6fvUoSgwTvhtNhJfv34nTa8b88LGbEuV/4eCZ79aIe48I20yzFCXxKFVXr9VyHO8xZN8jdXWNtXWef7RJcYjfd5jDeImE9HgWIZWQMbHS2BhZbKw0MZHu0jmpS5ekrp2T0tMTfX8xvSbnzvRdO194ecU3e/eXwh8I4jiGQ6zLGMYKU1VLJhPLpEjLwgBxzlBLwfeQ5eN4s6Fp5xfUxCDldxYKTVMek/RrNPqGBiYhIcbHuRrg7loGItu6IHxZh5rM1lEjs7p0Se7auV1SUnxsjDQmVhYbI5XJwuirS9PUayunTii6/MyzG/1b9Le4RAszIMxZZ5QRplpGJCRJB45nfoSNNbMW/iYdMkFQso2gkZvT0ePlOGNjk7GxyXctg6lSTpKEOtRaxjCenXoqF9u0775+0t/mBISYGOng/O5bv3mqoKBs67ZjGq3eZLK4aQ+zDgUAFMBdGu/ftzOsodFC+PnLnIhI6Yhp4h79IJvzdTeshfsCapHXwOTj1+uNfinHu2Nnkcc2yUnx3jmn/YgG4lInTcuDYEmgSVUrZ87I27hu0drVc2dNz/M61t9Jpa5+l6e7QU7y4ErhRBNhui4DAGASmWzMbPbKWahCTQ7esmu9OLMP0SHsfo66d0+Jj5fX17s7R+d5x3fbj02a6FPc767dxTBl7hMSYhMSBHum/culyzc8tqGoMNoz+khMjHRA/y4D+ncBALAsp9HWlJffuFkGxXkuCbPxP3Wq4urVWo/N4mgq5G6E4BO+WgYAEGVky0ZMY374GKYxbzaYt62JfXRVuB0CqJQKlVLhXsvAn5n4yyAry90Ow1i//vYwTMvcnPRAJx30SHGJ51u3PiZ6DVtIksjo1M6LMDSNVv/qG9thWkIWf4gywnWP6QQnpIMnitKgCuQAANgLRezZYwG1yAtiYqSJiZ6j/1mWW/vhHq8r6BSdulJ06gpMS/gCZQFi1+5imMCRjE7CqkBENwxjXfHKtzBFPEmSyMvznHIn+ghvLQMAkyvkk5dgcricXHa26YePhRYPDjQkSUy4H6p6YHGJZqNX+a0MBubF5V/BBNxmZ6mzslK9mMKP7PgJ6tpZyO0MK956ZwdkUulUtSqrV2t86cJdywAAotRu0oH3QTa26ypMX6xwsJ6PyYJJfl4mTOF7Z93p1Wt2Wa0s/OBVVQ1TZ6z2GPYBACAIfPrUQaHdYJaWXj1+vNxjs+HDeoZ8I+wLfgwGNhiYJU+v27TlkPvkaDe5/77evh+IRyIRoGVARFL3LYDPOsuWF7Ml4VUNgKapWRCZ+J188tlvH3+6F7LxwYKyOfM+gnH5AwBSU5Wh3X1otPqlz2+CCY/K6uXTeV9oYRjrsuVfvbj8q127oc4c3XCwoGzGg2vgx0lVK+E/aVFGWPv+/0JEUpP+zukr7RWlHts6LGbzpreIRHVYnWkO6N8lpX2ba9c9l8KzWu3vr931y64/nlx8T1YvtUqluD2E3WSyVOrq/3uwbM0Hu+HvcuYPygxQBu36evNb7/zYrl1cbk7HlPZtKEpMURKKkjiTRjRZbIYGprDo8qtvbIf0+PTzd3iUyWTxqPj+uup8/XrdiZOX6uvN32w9mqpW5g/K7N49JTOzfUKbGDqO8hiOz7LcjWqDXm9cvWZXwSEBhZmdddFhcu1HJRGiZQDgdBv59KWmT17iajwnC+TNBtPmt2IfW4UrEoJgGwxJSfFjRmd/9gVsuebyS1VLnl6XnBSfkdEu5440mpYnJcUZDAzD2DTamsNHLlTq6j2ejd5KHHR1RS8wGJiDh85VVxtIkoiPj6EosfxWLWuyGQyMRgubAiCjU7uMDC+zTbii7Nz1OfM+dN/GxwSEN7n19oVGq9+wuQDHMYqSJLSJoWlKoZClqlWpaqVarSRJIo6WO3fTlbr6BgNTpas/WXS54kqNXm8Uak/I192hJWK0DGC4SN015sEXGz96HqZouV17zrL3a2r8fCAKi/yCOI49umDkH39oTnrKbnwTluWcWfb37vO8GnUPRUlWvDwpcPda6upNzgpDLMtVV8Ol0nTN5En9FLF+DqzheYe/pMojW7871uz2Bc87TCbLzbj/Q7+f9/ukSmXsJx8uCGjlmjAnEvxltyDKyJLd+whUUzvb9NuWpp++CLBFAqBp6rWVU0IScz9mdPaY0XcEbnw/5qKKo6nx4yI7PAryoNaPUJTk9ZVTW2F87K1EmJYBDJcOfoAaNw8jIYLC7SyzZ6PtxG+BNwuWjh3bLn7i7iCf0GX1Ur/5+vSA5o0o8VPdVpIklr3wQETfi96xszD4eV9nTBs4dAhsGGa0EmlaBgAAQDpmtmz0bKimdta05S32zNEAWySA8eNyn1w8NmhyltVL/faqGYGeBeZ+JQz9+3UeMzrbL0OFih0/eb4S60dIkpjz0JDAeUIjiIjUMowUy8bPo8YvwMSea2Y5zEbTlyvZC0H9hLmBJImHZg9+aPZgL9L1CYIg8EEDu/7zndkdOwY8gB7mfqVHUtXKl1+aFNFZtyp19eXlUPExfkGpjF323P3Lnru/1Z5d3kpEapkT2ZhZ8lnLYFryxlrTp8vDZ3VGksSTi8f++90HAypnUycPWLt6bnB8KL6vy1LVyk8+nB/pHh+drh4maNkvZPVSf/LhgpmtNZrsdiJYy4CIlPQZpVjyPh4T57Etb6wNt9VZ3z4Zb74+vUf3FInEz6fJHdMTn3lq3IqXJwXn55phrL7UkcJxLC1N9fmnjwZh/Rhoik5d8boOEzxpaapJE/p+981TvXp2CPRcEUTkxGS4gOyWG/voqsYPn/NYVZM31jKb36b+tpiETosWaPLzMnPuTC8surxuw0FBUZGuUCpjFz0+etTIrGCezReXeO/4j6OpqVMGzpoxCKYuZPgzZXL/jE5t9+4r3fFTkb/q0dyK8/0dObyXshXHXrgi4rUMYLio8x2xj71p2vw2V3nJfVu7rsL05cqYOS+HT4VgZ/bRAf27HiwoW/vh7hp9Y1VVg6ARnHGYiSpF79yOzz5zb/APAVnW3qtnhxp9o9HYBPkFjomR0jQ1JL/7wsdHRVNIlCJWNnRIj6FDeix9evzBgrJt3x+vrjbW6I2CopqbIZOKaZpKTo4fPSp77kNDfLTQ4XA4HP6sfhQ+RL6WAQAAEGVkKRa/Zz28g/npC2B3dzGbN9Y2frZcNniibOzcMAmjBQCQJDF8WM/+/TrX6BuvXq09WFC2b3+px0B5kiTyB2WOGN4rM7N9YqIiVKKQn5fZO7djjb6xtrax7Nz1wsIKzdUaxmzTaGtujU5QKWNpWk7T1PhxOXdkp9E0ldK+TdCMTE6Kf2TecN/HgdwI0zQ1flzumNF3mEyWGr3x4kWdRqsvLLrcYGBK4JaxcTTVqVO7/LxugwZ2o2lKpYz1i8cgqV2cx0NPHMdUKp8+SzRNzZyRx3mqju7fWEssqkTazrJnjpo2ruKNnnJvikj5vY+I+98dPpecmsGynMFgrqxsaDCYdboGg8Hs9EklJ8UraCo5KT6OpjIzPefeEMT8Rz858N+z7tsseeLuhdARAM7/giRFER0y5l+ceWUrK+sBADX6RqOBcValSlAqAADOdzY5OR69YkKJknXZn4hIMjtPkZBk3vI2W+42tYCdNf/4sa30cMz8leEpZyRJKJWKSHeLOP+LUFsRXnidVxbhnkg+x3QBkZIR+/jb1PgFmMxtxIOdZS8UGVZMZ8tOhFu+MwQCIZQo1DIAACZXyMbMin1slcdKTrzZ0PjR85Zd64NjGAKBCBDRtce8FRFJds0lO2WxZ44yOz616ypcnQk4LGZm52e2wr3U5CVkl5zwORBAIBDwROe67C+cHrSnPlA8uopQuQsstOsqGj9bbt7yjudzAwQCEX5Eu5YBAADAqBiy10D6hc+lgyfi8YkAb/let8NstBz6wbBiuvXoLw7GFGQjEQiEL0TvHvM2nCWdpCOm2S8VWw5ss18502Iz3mwwbXid7JQt6XePpM9ItOVEICKCVqRlAAAgIonEFCIxRXLXKPbMUcvvP9qvXuTrbktsYGfZ8yfZS8W2U/ulwyaLMrKh0qUhEIjQ0cq07CYikszOI3sN4OpusGeOWPdvtesqmrexs7aSAvZCEXXfI9Jhk0NhJQKBgKW1apkTnCCUycTgidLBE/nqa9bje2ynDznMRt5Y57D+WXvCYTFbj+1GWoZAhDmtW8tuAU9MkY2bKx013WE28nU37Ncu2Ar326+cdXCsbMS0UFsXJATVGEYgwgqkZf8DJpZiYikenyjq1Es6eKLDbMTkregKTtcuyc0KCN1OchAvhCMQ8ETX3XIEAtFaaRXxZQgEIupBWoZAIKIBpGUIBCIaQFqGQCCiAaRlCAQiGkBahkAgogGkZQgEIhpAWoZAIKIBpGUIBCIaQFqGQCCiAaRlCAQiGkBahkAgogERuluOQCCigP8HtAb6sqgQtWkAAAAASUVORK5CYII="
+PAGES_PATH = Path("data/pages.jsonl")
 
-APP_TITLE = "עוזר דיגיטלי לשאלות על ביטוח"
-APP_SUBTITLE = "התשובות מבוססות על תוכן אתר הפניקס בלבד, עם קישור למקור"
+APP_TITLE = "עוזר דיגיטלי"
+APP_SUBTITLE = "שואלים על ביטוח, מקבלים תשובה מהאתר"
 DISCLAIMER = (
     "פרויקט האקתון. השירות אינו אתר רשמי של הפניקס, אינו ייעוץ ביטוחי "
     "ואינו מחליף פנייה לשירות הלקוחות."
@@ -21,51 +30,190 @@ DISCLAIMER = (
 SITE_URL = "https://www.fnx.co.il"
 
 SUGGESTIONS = [
-    "מה זה ביטוח תכולה?",
-    "איך מגישים תביעה בביטוח רכב?",
-    "מה עושים אחרי פריצה לבית?",
-    "אילו מסמכים צריך לצרף לתביעה בביטוח דירה?",
+    ("🏠", "מה זה ביטוח תכולה?"),
+    ("🚗", "איך מגישים תביעה בביטוח רכב?"),
+    ("🔒", "מה עושים אחרי פריצה לבית?"),
+    ("📄", "אילו מסמכים צריך לצרף לתביעה בביטוח דירה?"),
 ]
 
-BUSY_MSG = "השירות עמוס כרגע. אפשר לנסות שוב בעוד רגע."
-NOT_FOUND_HINT = (
-    "אפשר לנסות לנסח את השאלה אחרת, או לפנות לשירות הלקוחות של הפניקס."
+GREETING = (
+    "שלום 👋 אני עוזר דיגיטלי שעונה על שאלות על ביטוח ועל הגשת תביעות, "
+    "לפי תוכן אתר הפניקס. בכל תשובה אצרף קישור לעמוד המקור."
 )
+BUSY_MSG = "השירות עמוס כרגע. אפשר לנסות שוב בעוד רגע."
+NOT_FOUND_HINT = "אפשר לנסח את השאלה אחרת, או לפנות לשירות הלקוחות של הפניקס."
 
 st.set_page_config(
     page_title=APP_TITLE,
     page_icon=str(LOGO) if HAS_LOGO else "💬",
     layout="centered",
+    initial_sidebar_state="collapsed",
 )
 
-# ---------- עיצוב ----------
-# אפשר לשנות את הצבעים כאן
+
+def logo_data_uri():
+    if HAS_LOGO:
+        try:
+            return "data:image/png;base64," + base64.b64encode(LOGO.read_bytes()).decode()
+        except Exception:
+            pass
+    return "data:image/png;base64," + LOGO_B64
+
+
+# ---------- עיצוב (אפשר לשנות את הצבעים כאן) ----------
 st.markdown(
     """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap');
-:root { --brand: #E4572E; --brand-soft: #FDEEE8; --ink: #1F2933; --muted: #6B7280; }
-html, body, .stApp, [data-testid="stSidebar"] { direction: rtl; font-family: 'Heebo', sans-serif; }
-.stApp { background: #FAFAF8; }
-[data-testid="stSidebar"] { background: #FFFFFF; border-left: 1px solid #ECECEC; }
-.block-container { padding-top: 2rem; max-width: 760px; }
-.hero { display:flex; align-items:center; gap:14px; margin-bottom: .4rem; }
-.hero h1 { font-size: 1.6rem; margin: 0; color: var(--ink); font-weight: 700; }
-.hero p { margin: 2px 0 0 0; color: var(--muted); font-size: .95rem; }
-[data-testid="stChatMessage"] { direction: rtl; border-radius: 14px; padding: .9rem 1rem; }
-.stButton > button { border-radius: 12px; border: 1px solid #E5E7EB; text-align: right; }
-.stButton > button:hover { border-color: var(--brand); color: var(--brand); }
-.disclaimer { color: var(--muted); font-size: .8rem; text-align: center; margin-top: 1.2rem; }
-.sources-title { color: var(--muted); font-size: .85rem; margin-top: .6rem; }
-a { color: var(--brand) !important; }
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap');
+:root {
+  --brand: #E4572E; --brand-dark: #C4411B; --brand-soft: #FDEEE8;
+  --navy: #2B2D7F; --ink: #1F2933; --muted: #7B8794; --line: #ECE6E0; --wall: #F4EFEA;
+}
+html, body, .stApp, .stMarkdown, button, input, textarea {
+  direction: rtl; font-family: 'Heebo', sans-serif !important;
+}
+.stApp { background: radial-gradient(1200px 500px at 50% -100px, #FFE3D6 0%, #F3F0EC 60%) fixed; }
+[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stAppDeployButton"],
+[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], #MainMenu, footer { display: none !important; }
+
+/* מסגרת בצורת טלפון: על כל גובה המסך, והגלילה בתוכה */
+[data-testid="stMain"], [data-testid="stAppScrollToBottomContainer"], section.main { overflow: hidden !important; }
+.block-container {
+  max-width: 430px !important; height: calc(100dvh - 2rem); margin: 1rem auto !important;
+  padding: 0 0 120px 0 !important; overflow-y: auto; overflow-x: hidden;
+  background-color: var(--wall);
+  background-image: radial-gradient(#E6DCD2 1.2px, transparent 1.2px); background-size: 20px 20px;
+  border-radius: 28px;
+  box-shadow: 0 20px 60px rgba(43,45,127,.20), 0 0 0 8px #fff, 0 0 0 9px #E8E2DC;
+  scrollbar-width: thin;
+}
+@media (max-width: 480px) {
+  .block-container { height: 100dvh; margin: 0 auto !important; border-radius: 0; box-shadow: none; }
+}
+.block-container > div > div { padding-inline: 14px; }
+
+/* כותרת עליונה */
+.topbar {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #fff;
+  border-bottom: 3px solid var(--brand); margin: 0 -14px 14px -14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.05); 
+}
+[data-testid="stElementContainer"]:has(.topbar) { position: sticky; top: 0; z-index: 50; }
+.topbar img { height: 34px; width: auto; display: block; }
+.topbar .sep { width: 1px; height: 30px; background: var(--line); }
+.topbar .t1 { font-weight: 800; color: var(--navy); font-size: 1.05rem; line-height: 1.15; }
+.topbar .t2 { color: var(--muted); font-size: .78rem; display: flex; align-items: center; gap: 5px; }
+.topbar .dot { width: 8px; height: 8px; border-radius: 50%; background: #22C55E; display: inline-block; }
+
+/* בועות */
+.row { display: flex; margin: 6px 0; }
+.row.user { justify-content: flex-start; }
+.row.bot { justify-content: flex-end; }
+.bubble {
+  max-width: 86%; padding: 10px 14px 8px 14px; font-size: .98rem; line-height: 1.7;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08); word-wrap: break-word; color: var(--ink);
+}
+.row.user .bubble {
+  background: linear-gradient(135deg, #E4572E, #EE7A4E); color: #fff;
+  border-radius: 18px 18px 4px 18px;
+}
+.row.bot .bubble { background: #fff; border-radius: 18px 18px 18px 4px; }
+.row.bot .bubble.info { background: #F1F5F9; }
+.row.bot .bubble.warn { background: #FFF6DD; color: #6B4E00; }
+.time { font-size: .68rem; opacity: .6; margin-top: 2px; text-align: end; }
+.hint { color: var(--muted); font-size: .85rem; margin-top: 6px; }
+
+/* מקורות */
+.sources-title { color: var(--muted); font-size: .78rem; margin: 10px 0 5px 0; font-weight: 500; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+a.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 999px;
+  background: var(--brand-soft); border: 1px solid #F6CDBD; font-size: .8rem; text-decoration: none !important;
+  color: var(--brand-dark) !important; line-height: 1.4;
+}
+a.chip:hover { background: var(--brand); color: #fff !important; }
+a.chip .n { background: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: .7rem; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* מצב "מקליד" */
+.typing { display: inline-flex; gap: 5px; padding: 6px 2px; }
+.typing span { width: 8px; height: 8px; border-radius: 50%; background: #B8B2AB; animation: blink 1.2s infinite; }
+.typing span:nth-child(2) { animation-delay: .2s; } .typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%,60%,100% { opacity: .25; transform: translateY(0);} 30% { opacity: 1; transform: translateY(-3px);} }
+
+/* כפתורים */
+.stButton > button {
+  border-radius: 999px; border: 1px solid #F1D3C6; background: #fff; color: var(--ink);
+  padding: .5rem 1rem; font-size: .92rem; box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.stButton > button:hover { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-dark); }
+.stButton > button p { text-align: right; }
+
+/* קלט הודעה: בתוך המסגרת, בתחתית */
+[data-testid="stBottom"] { position: fixed !important; bottom: 0; left: 0; right: 0; width: 100%; z-index: 100; }
+[data-testid="stBottom"], [data-testid="stBottom"] > div { background: transparent !important; }
+[data-testid="stBottomBlockContainer"], [data-testid="stBottom"] > div {
+  max-width: 430px !important; margin: 0 auto; padding-inline: 14px !important;
+  padding-bottom: calc(1rem + 14px) !important; padding-top: 0 !important;
+}
+@media (max-width: 480px) {
+  [data-testid="stBottomBlockContainer"], [data-testid="stBottom"] > div { padding-bottom: 12px !important; }
+}
+[data-testid="stChatInput"] {
+  background: #fff; border-radius: 999px; border: 1px solid #E5DED7; box-shadow: 0 2px 10px rgba(0,0,0,.10);
+}
+[data-testid="stChatInput"] textarea { font-size: 1rem; }
+[data-testid="stChatInputSubmitButton"] { background: var(--brand) !important; color: #fff !important; border-radius: 50%; }
+
+[data-testid="stExpander"] { background: #fff; border-radius: 14px; border: 1px solid var(--line); }
+.disclaimer { color: var(--muted); font-size: .7rem; text-align: center; margin: 16px 6px 0 6px; line-height: 1.5; }
+a { color: var(--brand-dark); }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
+
+# ---------- כותרות עמודים (לתצוגת המקורות) ----------
+@st.cache_data(show_spinner=False)
+def load_titles():
+    """url -> כותרת העמוד, מתוך data/pages.jsonl. אם אין, משתמשים בחלק מהכתובת."""
+    titles = {}
+    if not PAGES_PATH.exists():
+        return titles
+    try:
+        with open(PAGES_PATH, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                t = (d.get("title") or d.get("page_title") or "").strip()
+                if d.get("url") and t:
+                    titles[d["url"]] = t
+    except Exception:
+        pass
+    return titles
+
+
+def source_label(url):
+    t = load_titles().get(url)
+    if t:
+        for sep in (" | ", " - ", " – "):
+            if sep in t:
+                t = t.split(sep)[0]
+        return t if len(t) <= 45 else t[:42] + "..."
+    slug = url.rstrip("/").split("/")[-1]
+    return slug.replace("-", " ").replace("_", " ") or url
+
+
 # ---------- מצב ----------
 if "messages" not in st.session_state:
-    st.session_state.messages = []  # {"role","content","sources","status"}
+    st.session_state.messages = []  # {"role","content","sources","status","t"}
+
+
+def now_str():
+    return datetime.now().strftime("%H:%M")
 
 
 def ask(q):
@@ -99,107 +247,126 @@ def build_history():
     return out
 
 
-def source_label(url):
-    slug = url.rstrip("/").split("/")[-1]
-    return slug.replace("-", " ").replace("_", " ") or url
-
-
 # ---------- תצוגה ----------
-def render_body(msg, is_last=False):
-    status = msg.get("status")
-    if msg["role"] == "user":
-        st.markdown(msg["content"])
-        return
-    if status == "llm_unavailable":
-        st.warning(BUSY_MSG)
-        if is_last:
-            st.button("נסו שוב", key="retry_btn", on_click=retry)
-        return
-    if status in ("not_found", "personal_only"):
-        st.info(msg["content"] + ("\n\n" + NOT_FOUND_HINT if status == "not_found" else ""))
-        return
-    st.markdown(msg["content"])
-    if msg.get("sources"):
-        st.markdown('<div class="sources-title">📎 מקורות באתר</div>', unsafe_allow_html=True)
-        for i, url in enumerate(msg["sources"], start=1):
-            st.markdown(f"{i}. [{source_label(url)}]({url})")
+def text_html(text):
+    """טקסט רגיל ל-HTML: בטוח, עם שורות חדשות ו-**הדגשה**."""
+    s = html.escape(text or "").replace("\n", "<br>")
+    return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
 
 
-def avatar_for(role):
-    if role == "assistant":
-        return str(LOGO) if HAS_LOGO else "💬"
-    return "🙂"
+def bubble(role, inner, kind="", t=""):
+    cls = "user" if role == "user" else "bot"
+    tm = f'<div class="time">{t}</div>' if t else ""
+    st.markdown(
+        f'<div class="row {cls}"><div class="bubble {kind}">{inner}{tm}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def sources_html(sources):
+    chips = "".join(
+        f'<a class="chip" href="{html.escape(u, quote=True)}" target="_blank" rel="noopener">'
+        f'<span class="n">{i}</span>{html.escape(source_label(u))}</a>'
+        for i, u in enumerate(sources, start=1)
+    )
+    return f'<div class="sources-title">📎 מקורות באתר הפניקס</div><div class="chips">{chips}</div>'
 
 
 def render(msg, is_last=False):
-    with st.chat_message(msg["role"], avatar=avatar_for(msg["role"])):
-        render_body(msg, is_last)
+    status = msg.get("status")
+    t = msg.get("t", "")
+    if msg["role"] == "user":
+        bubble("user", text_html(msg["content"]), t=t)
+        return
+    if status == "llm_unavailable":
+        bubble("bot", text_html(BUSY_MSG), "warn", t)
+        if is_last:
+            st.button("🔄 נסו שוב", key="retry_btn", on_click=retry)
+        return
+    if status == "not_found":
+        hint = f'<div class="hint">{text_html(NOT_FOUND_HINT)}</div>'
+        bubble("bot", text_html(msg["content"]) + hint, "info", t)
+        return
+    if status == "personal_only":
+        bubble("bot", text_html(msg["content"]), "info", t)
+        return
+    inner = text_html(msg["content"])
+    if msg.get("sources"):
+        inner += sources_html(msg["sources"])
+    bubble("bot", inner, t=t)
 
 
-# ---------- סרגל צד ----------
-with st.sidebar:
-    if HAS_LOGO:
-        st.image(str(LOGO), width=140)
-    st.markdown("### מה אפשר לשאול")
-    st.markdown(
-        "- מה כוללת ומה לא כוללת פוליסה\n"
-        "- איך מגישים תביעה ואילו מסמכים צריך\n"
-        "- מה עושים אחרי אירוע (פריצה, הצפה ועוד)\n"
-        "- שאלות המשך על מה שנאמר"
-    )
-    st.markdown("### מה לא אפשר")
-    st.markdown(
-        "- מידע על הפוליסה או התביעה האישית שלכם\n"
-        "- ייעוץ אישי או המלצה מה לבחור\n"
-        "- נושאים שאינם מופיעים באתר"
-    )
-    st.button("שיחה חדשה", on_click=new_chat, use_container_width=True)
-    st.caption(f"האתר המלא: [{SITE_URL.replace('https://', '')}]({SITE_URL})")
-
-# ---------- כותרת ----------
+# ---------- כותרת עליונה ----------
+logo = logo_data_uri()
+logo_html = f'<img src="{logo}" alt="הפניקס"><div class="sep"></div>' if logo else ""
 st.markdown(
-    f'<div class="hero"><div><h1>{APP_TITLE}</h1><p>{APP_SUBTITLE}</p></div></div>',
+    f'<div class="topbar">{logo_html}<div><div class="t1">{APP_TITLE}</div>'
+    f'<div class="t2"><span class="dot"></span>{APP_SUBTITLE}</div></div></div>',
     unsafe_allow_html=True,
 )
 
 # ---------- קלט ----------
-typed = st.chat_input("כתבו כאן את השאלה...")
+typed = st.chat_input("כתבו הודעה...")
 question = typed or st.session_state.pop("pending", None)
 
+msgs = st.session_state.messages
+
 # ---------- מסך פתיחה ----------
-if not st.session_state.messages and not question:
-    st.markdown("#### שלום, במה אפשר לעזור?")
-    st.write("אפשר לשאול על ביטוחים והגשת תביעות. כל תשובה מגיעה עם קישור לעמוד באתר.")
-    cols = st.columns(2)
-    for i, s in enumerate(SUGGESTIONS):
-        cols[i % 2].button(s, key=f"sugg_{i}", on_click=ask, args=(s,), use_container_width=True)
+if not msgs and not question:
+    bubble("bot", text_html(GREETING), t=now_str())
+    st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
+    for i, (ico, s) in enumerate(SUGGESTIONS):
+        st.button(f"{ico}  {s}", key=f"sugg_{i}", on_click=ask, args=(s,), use_container_width=True)
+    with st.expander("ℹ️ מה אפשר ומה אי אפשר לשאול"):
+        st.markdown(
+            "**אפשר:** מה כוללת פוליסה, איך מגישים תביעה, אילו מסמכים צריך, "
+            "מה עושים אחרי אירוע, ושאלות המשך.\n\n"
+            "**אי אפשר:** מידע על הפוליסה או התביעה האישית שלכם, ייעוץ אישי, "
+            "או נושאים שאינם באתר."
+        )
 
 # ---------- היסטוריה ----------
-msgs = st.session_state.messages
 for i, m in enumerate(msgs):
     render(m, is_last=(i == len(msgs) - 1) and not question)
 
 # ---------- שאלה חדשה ----------
 if question:
     history = build_history()
-    user_msg = {"role": "user", "content": question}
+    user_msg = {"role": "user", "content": question, "t": now_str()}
     st.session_state.messages.append(user_msg)
     render(user_msg)
 
-    with st.chat_message("assistant", avatar=avatar_for("assistant")):
-        with st.spinner("מחפש בתוכן האתר..."):
-            try:
-                res = rag.answer(question, history)
-            except Exception as e:  # לא מציגים שגיאה טכנית למשתמש
-                print("app error:", e)
-                res = {"status": "llm_unavailable", "answer": "", "sources": []}
-        bot_msg = {
-            "role": "assistant",
-            "content": res.get("answer", ""),
-            "sources": res.get("sources", []),
-            "status": res.get("status"),
-        }
-        st.session_state.messages.append(bot_msg)
-        render_body(bot_msg, is_last=True)
+    holder = st.empty()
+    holder.markdown(
+        '<div class="row bot"><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div></div>',
+        unsafe_allow_html=True,
+    )
+    try:
+        res = rag.answer(question, history)
+    except Exception as e:  # לא מציגים שגיאה טכנית למשתמש
+        print("app error:", e)
+        res = {"status": "llm_unavailable", "answer": "", "sources": []}
+    holder.empty()
+    bot_msg = {
+        "role": "assistant",
+        "content": res.get("answer", ""),
+        "sources": res.get("sources", []),
+        "status": res.get("status"),
+        "t": now_str(),
+    }
+    st.session_state.messages.append(bot_msg)
+    render(bot_msg, is_last=True)
 
+# ---------- גלילה אוטומטית לסוף השיחה (בתוך המסגרת) ----------
+components.html(
+    """<script>
+    const box = window.parent.document.querySelector('.block-container');
+    if (box) { setTimeout(() => box.scrollTo({top: box.scrollHeight, behavior: 'smooth'}), 150); }
+    </script>""",
+    height=0,
+)
+
+# ---------- תחתית ----------
+if st.session_state.messages:
+    st.button("✨ שיחה חדשה", on_click=new_chat, key="new_chat")
 st.markdown(f'<div class="disclaimer">{DISCLAIMER}</div>', unsafe_allow_html=True)
