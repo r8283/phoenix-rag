@@ -262,6 +262,25 @@ def rewrite_question(question, history):
     line = text.strip().splitlines()[0].strip().strip('"')
     return line if 3 <= len(line) <= 300 else question
 
+# ---------- שאלות שאינן קשורות לביטוח בכלל ----------
+OFF_TOPIC_TEXT = (
+    "אני מתמקד בשאלות על ביטוח והגשת תביעות לפי אתר הפניקס, ולכן לא אוכל לעזור בנושא הזה. "
+    "במה אוכל לעזור בתחום הביטוח?"
+)
+
+# אם אף אחת מהמילים האלה לא מופיעה בשאלה, והחיפוש לא מצא קטע קרוב, השאלה לא קשורה לאתר
+_INSURANCE_WORDS = (
+    "ביטוח", "פוליס", "תביע", "כיסוי", "מכוס", "פניקס", "נזק", "דירה", "תכולה", "מבנה",
+    "רכב", "תאונ", "פריצ", "גניב", "הצפ", "נזיל", "שרברב", "פיצוי", "השתתפות", "פרמיה",
+    "סוכן", "שמאי", "נכות", "סיעוד", "בריאות", "נסיעות", "פנסיה", "פנסיונ", "גמל",
+    "השתלמות", "חיסכון", "חסכון", "השקעות", "הלוואה", "משכנתא", "מבוטח", "שירות לקוחות",
+)
+
+
+def _is_insurance_related(*texts):
+    joined = " ".join(t or "" for t in texts)
+    return any(w in joined for w in _INSURANCE_WORDS)
+
 
 # ---------- הפונקציה הראשית ----------
 def answer(question, history=None):
@@ -289,6 +308,8 @@ def answer(question, history=None):
 
     # שער ראשון: אין תוצאות או שהציון הטוב ביותר נמוך מהסף
     if not hits or top < MIN_SCORE:
+        if not _is_insurance_related(question, standalone):
+            result["answer"] = OFF_TOPIC_TEXT
         return result
 
     excerpts = "\n\n".join(
