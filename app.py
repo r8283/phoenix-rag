@@ -41,8 +41,7 @@ GREETING = (
     "לפי תוכן אתר הפניקס. בכל תשובה אצרף קישור לעמוד המקור."
 )
 BUSY_MSG = "השירות עמוס כרגע. אפשר לנסות שוב בעוד רגע."
-NOT_FOUND_HINT = "אפשר לנסח את השאלה אחרת, או לפנות לשירות הלקוחות של הפניקס."
-
+NOT_FOUND_HINT = ""
 st.set_page_config(
     page_title=APP_TITLE,
     page_icon=str(LOGO) if HAS_LOGO else "💬",
@@ -251,6 +250,7 @@ def build_history():
 def text_html(text):
     """טקסט רגיל ל-HTML: בטוח, עם שורות חדשות ו-**הדגשה**."""
     s = html.escape(text or "").replace("\n", "<br>")
+    s = re.sub(r"(\*\d{3,4}|\b0\d{1,2}-\d{7}\b)", r'<span dir="ltr">\1</span>', s)
     return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
 
 
