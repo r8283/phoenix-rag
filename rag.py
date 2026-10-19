@@ -212,13 +212,13 @@ def _has_garbled_chars(text):
     return any(unicodedata.category(ch) in ("Cn", "Co", "Cs") for ch in text)
 
 _NIKUD = re.compile(r"[\u0591-\u05C7]")
+_FOREIGN = re.compile(r"[\u0400-\u04FF\u0600-\u06FF\u0750-\u077F\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]")
 def _valid_answer_json(text):
     data = parse_json(text)
     if not data or data.get("status") not in ("answered", "not_found", "personal_only"):
         return False
     ans = str(data.get("answer", ""))
-    return not _has_garbled_chars(ans) and not _NIKUD.search(ans)
-
+    return not _has_garbled_chars(ans) and not _NIKUD.search(ans) and not _FOREIGN.search(ans)
 
 def _clean_used(raw, n):
     """מנרמל את used: מקבל מספרים, מחרוזות, רשימות מקוננות או טקסט חופשי."""
