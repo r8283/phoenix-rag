@@ -4,6 +4,7 @@ app.py - ממשק הצ'אט (Streamlit), בעיצוב של אפליקציית ה
 לוגו: assets/logo.png (אם הקובץ קיים הוא מוצג בראש הצ'אט)
 """
 import base64
+import hashlib
 import html
 import json
 import re
@@ -254,6 +255,14 @@ a.chip .n { background: #fff; border-radius: 50%; width: 18px; height: 18px; fon
   background: #fff; border-radius: 999px; border: 1px solid #E5DED7; box-shadow: 0 2px 10px rgba(0,0,0,.10);
 }
 [data-testid="stChatInput"] textarea { font-size: 1rem; padding-left: 44px !important; }
+/* בזמן שהבוט חושב: התיבה נעולה, וזה צריך להיראות בבירור (המסך עצמו כבר לא מתעמעם) */
+[data-testid="stChatInput"]:has(textarea:disabled) { opacity: .5; }
+[data-testid="stChatInput"] textarea:disabled { cursor: not-allowed; }
+
+/* בלי הבהוב בזמן run: Streamlit מעמעם אלמנטים "ישנים" ומציג אינדיקטור ריצה */
+[data-stale="true"], [data-stale="true"] * { opacity: 1 !important; transition: none !important; }
+[data-testid="stStatusWidget"], [data-testid="stAppRunningIcon"], [data-testid="stSpinner"] { display: none !important; }
+.stApp, .stApp > header, [data-testid="stAppViewContainer"], [data-testid="stMain"] { transition: none !important; }
 [data-testid="stChatInputSubmitButton"] { background: var(--brand) !important; color: #fff !important; border-radius: 50%; }
 
 [data-testid="stExpander"] { background: #fff; border-radius: 14px; border: 1px solid var(--line); }
@@ -307,8 +316,15 @@ def source_label(url):
 
 
 # ---------- מצב ----------
-if "messages" not in st.session_state:
-    st.session_state.messages = []  # {"role","content","sources","status","t"}
+# busy: מרגע שהתקבלה שאלה ועד שהתשובה מוצגת. כל קלט בזמן הזה נזרק.
+# pending: שאלה שכבר נוספה לשיחה ומחכה לתשובה. pending_audio: הקלטה שמחכה לתמלול.
+# release: התשובה נשמרה. busy משתחרר רק בתחילת ה-run הבא, אחרי שה-callbacks של אותו run כבר רצו,
+# כך שקלט שנשלח בזמן החישוב (Enter כפול, לחיצה על הצעה) מגיע ל-callback כש-busy עדיין True ונזרק.
+for _k, _v in {"messages": [], "busy": False, "pending": None, "pending_audio": None,
+               "release": False, "audio_n": 0, "last_audio_hash": None}.items():
+    st.session_state.setdefault(_k, _v)
+
+VOICE_FAIL_MSG = "לא הצלחתי לשמוע, אפשר לנסות שוב או לכתוב את השאלה."
 
 
 def now_str():
@@ -316,20 +332,54 @@ def now_str():
 
 
 def ask(q):
+    """נקודת הכניסה היחידה לשאלה (הקלדה, תמלול, הצעה, נסו שוב). בזמן busy או לשאלה ריקה: כלום."""
+    q = (q or "").strip()
+    if st.session_state.busy or not q:
+        return
+    st.session_state.messages.append({"role": "user", "content": q, "t": now_str()})
     st.session_state.pending = q
+    st.session_state.busy = True
+
+
+def on_chat_submit():
+    ask(st.session_state.get("chat_box"))
+
+
+def on_audio():
+    key = f"audio_{st.session_state.audio_n}"
+    audio = st.session_state.get(key)
+    if st.session_state.busy or audio is None:
+        return
+    data = audio.getvalue()
+    h = hashlib.md5(data).hexdigest()
+    if not data or h == st.session_state.last_audio_hash:   # אותה הקלטה לא מתומללת פעמיים
+        return
+    st.session_state.last_audio_hash = h
+    st.session_state.pending_audio = data
+    st.session_state.busy = True
+    st.session_state.audio_n += 1   # מפתח חדש: חלון ההקלטה נסגר ומתנקה
 
 
 def new_chat():
+    if st.session_state.busy:
+        return
     st.session_state.messages = []
 
 
 def retry():
     """מוחק את התשובה התקולה ומריץ שוב את השאלה."""
     msgs = st.session_state.messages
-    if len(msgs) >= 2 and msgs[-1].get("status") == "llm_unavailable":
-        q = msgs[-2]["content"]
-        del msgs[-2:]
-        st.session_state.pending = q
+    if st.session_state.busy or len(msgs) < 2 or msgs[-1].get("status") != "llm_unavailable":
+        return
+    q = msgs[-2]["content"]
+    del msgs[-2:]
+    ask(q)
+
+
+if st.session_state.release:
+    st.session_state.busy = False
+    st.session_state.release = False
+BUSY = st.session_state.busy
 
 
 def build_history():
@@ -381,7 +431,7 @@ def render(msg, is_last=False):
     if status == "llm_unavailable":
         bubble("bot", text_html(BUSY_MSG), "warn", t)
         if is_last:
-            st.button("🔄 נסו שוב", key="retry_btn", on_click=retry)
+            st.button("🔄 נסו שוב", key="retry_btn", on_click=retry, disabled=BUSY)
         return
     if status == "not_found":
         hint = f'<div class="hint">{text_html(NOT_FOUND_HINT)}</div>'
@@ -417,31 +467,20 @@ st.markdown(
 )
 
 # ---------- שאלה בקול ----------
-# אחרי כל הקלטה מחליפים את המפתחות, כדי שהחלון ייסגר וההקלטה תתנקה
-vn = st.session_state.get("voice_n", 0)
-with st.popover(" ", icon=":material/mic:", key=f"voice_pop_{vn}"):
-    st.caption("לוחצים על המיקרופון, מדברים, ולוחצים שוב לעצירה. השאלה תופיע בצ'אט כפי שהובנה.")
-    audio = st.audio_input("הקלטה", key=f"voice_rec_{vn}", label_visibility="collapsed")
-if audio is not None:
-    with st.spinner("מתמלל..."):
-        heard = rag.transcribe(audio.getvalue())
-    st.session_state.voice_n = vn + 1
-    if heard:
-        st.session_state.pending = heard
-    else:
-        st.session_state.voice_error = True
-    st.rerun()
-if st.session_state.pop("voice_error", False):
-    st.warning("לא הצלחתי להבין את ההקלטה. אפשר לנסות שוב או לכתוב את השאלה.")
+# בזמן busy החלון לא מוצג. אחרי כל הקלטה המפתח מתחלף (audio_n), כדי שהחלון ייסגר וההקלטה תתנקה
+if not BUSY:
+    an = st.session_state.audio_n
+    with st.popover(" ", icon=":material/mic:", key=f"voice_pop_{an}"):
+        st.caption("לוחצים על המיקרופון, מדברים, ולוחצים שוב לעצירה. השאלה תופיע בצ'אט כפי שהובנה.")
+        st.audio_input("הקלטה", key=f"audio_{an}", label_visibility="collapsed", on_change=on_audio)
 
 # ---------- קלט ----------
-typed = st.chat_input("יש לך שאלה? אני כאן בשבילך 🙂")
-question = typed or st.session_state.pop("pending", None)
+st.chat_input("יש לך שאלה? אני כאן בשבילך 🙂", key="chat_box", on_submit=on_chat_submit, disabled=BUSY)
 
 msgs = st.session_state.messages
 
 # ---------- מסך פתיחה ----------
-if not msgs and not question:
+if not msgs and not BUSY:
     bubble("bot", text_html(GREETING), t=now_str())
     st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
     with st.expander("ℹ️ מה אפשר ומה אי אפשר לשאול"):
@@ -454,36 +493,16 @@ if not msgs and not question:
 
 # ---------- היסטוריה ----------
 for i, m in enumerate(msgs):
-    render(m, is_last=(i == len(msgs) - 1) and not question)
+    render(m, is_last=(i == len(msgs) - 1))
 
-# ---------- שאלה חדשה ----------
-if question:
-    history = build_history()
-    user_msg = {"role": "user", "content": question, "t": now_str()}
-    st.session_state.messages.append(user_msg)
-    render(user_msg)
-
-    holder = st.empty()
-    holder.markdown(
-        '<div class="row bot"><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div></div>',
-        unsafe_allow_html=True,
-    )
-    try:
-        res = rag.answer(question, history)
-    except Exception as e:  # לא מציגים שגיאה טכנית למשתמש
-        print("app error:", e)
-        res = {"status": "llm_unavailable", "answer": "", "sources": []}
-    holder.empty()
-    bot_msg = {
-        "role": "assistant",
-        "content": res.get("answer", ""),
-        "sources": res.get("sources", []),
-        "status": res.get("status"),
-        "followups": res.get("followups", []),
-        "t": now_str(),
-    }
-    st.session_state.messages.append(bot_msg)
-    render(bot_msg, is_last=True)
+# בועת "הבוט מקליד". החישוב עצמו רץ בסוף הקובץ, אחרי שכל הכפתורים כבר הוצגו נעולים
+TYPING_HTML = (
+    '<div class="row bot"><div class="bubble"><div class="typing">'
+    '<span></span><span></span><span></span></div></div></div>'
+)
+typing_holder = st.empty()
+if BUSY:
+    typing_holder.markdown(TYPING_HTML, unsafe_allow_html=True)
 
 # ---------- הצעות לשאלות נוספות ----------
 def followup_questions(msgs, n=3):
@@ -514,7 +533,8 @@ def followup_questions(msgs, n=3):
 
 
 if (
-    st.session_state.messages
+    not BUSY
+    and st.session_state.messages
     and st.session_state.messages[-1]["role"] == "assistant"
     and st.session_state.messages[-1].get("status") != "llm_unavailable"
 ):
@@ -536,5 +556,53 @@ components.html(
 
 # ---------- תחתית ----------
 if st.session_state.messages:
-    st.button("✨ שיחה חדשה", on_click=new_chat, key="new_chat")
+    st.button("✨ שיחה חדשה", on_click=new_chat, key="new_chat", disabled=BUSY)
+
+
+# ---------- חישוב (רק בזמן busy, אחרי שכל המסך הוצג נעול) ----------
+def _bot_msg(res):
+    return {
+        "role": "assistant",
+        "content": res.get("answer", ""),
+        "sources": res.get("sources", []),
+        "status": res.get("status"),
+        "followups": res.get("followups", []),
+        "t": now_str(),
+    }
+
+
+if BUSY and st.session_state.pending_audio is not None:
+    data, st.session_state.pending_audio = st.session_state.pending_audio, None
+    heard = None
+    try:
+        heard = rag.transcribe(data)
+    except Exception as e:
+        print("voice error:", e)
+    finally:
+        heard = (heard or "").strip()
+        if heard:   # השאלה נכנסת כהודעת משתמש רגילה, והתשובה תחושב ב-run הבא (busy נשאר)
+            st.session_state.messages.append({"role": "user", "content": heard, "t": now_str()})
+            st.session_state.pending = heard
+        else:
+            st.session_state.messages.append(_bot_msg({"answer": VOICE_FAIL_MSG, "status": "meta"}))
+            st.session_state.release = True
+    st.rerun()
+
+if BUSY and st.session_state.pending:
+    question = st.session_state.pending
+    history = build_history()[:-1]   # בלי השאלה הנוכחית, שכבר נוספה לשיחה
+    res = {"status": "llm_unavailable", "answer": "", "sources": []}
+    try:
+        res = rag.answer(question, history)   # קריאה אחת בלבד לכל שאלה
+    except Exception as e:  # לא מציגים שגיאה טכנית למשתמש
+        print("app error:", e)
+    finally:   # גם בשגיאה: התשובה נשמרת והנעילה משתחררת
+        st.session_state.messages.append(_bot_msg(res))
+        st.session_state.pending = None
+        st.session_state.release = True
+    st.rerun()
+
+if BUSY and not st.session_state.pending and st.session_state.pending_audio is None:
+    st.session_state.release = True   # אין מה לחשב (מצב לא צפוי): לא משאירים את הצ'אט נעול
+    st.rerun()
 st.markdown(f'<div class="disclaimer">{DISCLAIMER}</div>', unsafe_allow_html=True)

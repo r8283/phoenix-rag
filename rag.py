@@ -700,25 +700,60 @@ def answer(question, history=None, *args, **kwargs):
     return _ask(question, history, args, kwargs)
 
 # ---------- תמלול שאלה בקול ----------
+TRANSCRIBE_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]   # המהיר ראשון
+TRANSCRIBE_BUDGET_SEC = 15   # זמן כולל לתמלול. אחריו מחזירים כישלון ולא ממתינים
+SILENCE_PEAK = 300           # הקלטת WAV ששיא העוצמה שלה נמוך מזה (מתוך 32767) נחשבת שקט
+
+
+def _is_silent_wav(data):
+    """True להקלטת WAV של 16 ביט שכמעט אין בה קול. על שקט המודל לפעמים "שומע" משפט שלא נאמר.
+    אם הקובץ לא נקרא כ-WAV, לא מכריעים (False)."""
+    import array
+    import io
+    import wave
+    try:
+        with wave.open(io.BytesIO(data)) as w:
+            if w.getsampwidth() != 2:
+                return False
+            frames = w.readframes(w.getnframes())
+    except Exception:
+        return False
+    samples = array.array("h", frames[: len(frames) // 2 * 2])
+    return not samples or max(abs(min(samples)), max(samples)) < SILENCE_PEAK
+
+
 def transcribe(audio_bytes, mime_type="audio/wav"):
-    """תמלול הקלטה בעברית עם Gemini. מחזיר טקסט, או None אם נכשל."""
+    """תמלול הקלטה בעברית עם Gemini. מחזיר טקסט, או None אם נכשל, אם אין דיבור, או אם עבר הזמן.
+    ניסיון אחד לכל מודל. עוברים למודל הבא רק בשגיאה או בזמן קצוב."""
     prompt = (
         "תמלל את ההקלטה לעברית. החזר רק את הטקסט שנאמר, בלי הסברים ובלי מרכאות. "
         "אם אין בהקלטה דיבור ברור, החזר מחרוזת ריקה."
     )
-    for model, _ in ANSWER_MODELS[:2]:
+    if not audio_bytes:
+        return None
+    if _is_silent_wav(audio_bytes):
+        print("  [voice] הקלטה שקטה, בלי תמלול", file=sys.stderr)
+        return None
+    audio = types.Part.from_bytes(data=audio_bytes, mime_type=mime_type)
+    start = time.time()
+    for model in TRANSCRIBE_MODELS:
+        left = TRANSCRIBE_BUDGET_SEC - (time.time() - start)
+        if left < 1:
+            break
         try:
             r = _client.models.generate_content(
                 model=model,
-                contents=[types.Part.from_bytes(data=audio_bytes, mime_type=mime_type), prompt],
-                config=types.GenerateContentConfig(temperature=0),
+                contents=[audio, prompt],
+                config=types.GenerateContentConfig(
+                    temperature=0, http_options=types.HttpOptions(timeout=int(left * 1000)),
+                ),
             )
             text = (r.text or "").strip().strip('"').strip()
-            if text and len(text) <= 300:
-                return text
-            return None
+            print(f"  [voice] {model} ענה אחרי {time.time() - start:.1f} שניות", file=sys.stderr)
+            return text if text and len(text) <= 300 else None
         except Exception as e:
-            print(f"  [voice] {model} נכשל: {str(e)[:90]}", file=sys.stderr)
+            print(f"  [voice] {model} נכשל אחרי {time.time() - start:.1f} שניות: {str(e)[:90]}", file=sys.stderr)
+    print(f"  [voice] התמלול נכשל, {time.time() - start:.1f} שניות", file=sys.stderr)
     return None
 
 if __name__ == "__main__":
