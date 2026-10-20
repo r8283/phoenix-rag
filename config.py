@@ -20,7 +20,7 @@ BASE_URL = "https://www.fnx.co.il"
 ALLOWED_HOSTS = ("www.fnx.co.il", "fnx.co.il")
 
 # --- סריקה ---
-MAX_PAGES = 600
+MAX_PAGES = 3000
 DELAY_SEC = 2.5
 MIN_PAGE_TEXT_LEN = 300
 
@@ -90,4 +90,4 @@ URL_PRIORITY_PATTERNS: tuple[tuple[int, tuple[str, ...]], ...] = (
 URL_PRIORITY_DEFAULT = 3
 
 # עמודים שאין בהם תוכן אמיתי
-URL_EXCLUDE_KEYWORDS_EXTRA: tuple[str, ...] = ("/404", "agents-promotions")
+URL_EXCLUDE_KEYWORDS_EXTRA: tuple[str, ...] = ("/404", "agents-promotions", "/en/", "/investor-relations/", "/tags/")

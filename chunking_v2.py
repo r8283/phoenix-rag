@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import statistics
+from collections import Counter
 from pathlib import Path
 
 PAGES_PATH = Path("data/pages.jsonl")
@@ -18,6 +19,7 @@ MIN_KEEP = 150            # קטע קצר מזה נזרק
 TAIL_MERGE_BELOW = 400    # שארית קצרה מזה מצורפת לקטע הקודם
 HEADING_MAX = 80          # שורה קצרה בלי סימן סיום נחשבת כותרת
 EXCLUDE_URL_PARTS = ("-old/",)   # עמודים ישנים. כדי לכלול הכל: ()
+BOILERPLATE_MIN_PAGES = 100     # שורה שחוזרת בכל כך הרבה עמודים היא תפריט האתר, ונמחקת
 
 SENT_SPLIT = re.compile(r"(?<=[.!?:;])\s+")
 
@@ -91,6 +93,11 @@ def main():
         for line in PAGES_PATH.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
+    line_pages = Counter()
+    for page in pages:
+        line_pages.update({l.strip() for l in (page.get("text") or "").split("\n") if l.strip()})
+    boilerplate = {l for l, n in line_pages.items() if n >= BOILERPLATE_MIN_PAGES}
+
     seen_pages, seen_chunks, out = set(), set(), []
     dup_pages = dup_chunks = short = excluded = 0
 
@@ -98,7 +105,9 @@ def main():
         if any(part in page["url"] for part in EXCLUDE_URL_PARTS):
             excluded += 1
             continue
-        body = (page.get("text") or "").strip()
+        body = "\n".join(
+            l for l in (page.get("text") or "").split("\n") if l.strip() not in boilerplate
+        ).strip()
         h = md5(body)
         if h in seen_pages:
             dup_pages += 1
@@ -132,6 +141,7 @@ def main():
     lens = sorted(len(r["text"]) for r in out)
     print("עמודים שנקראו:       ", len(pages))
     print("עמודים ישנים הוסרו:  ", excluded)
+    print("שורות תפריט הוסרו:   ", len(boilerplate))
     print("עמודים כפולים הוסרו: ", dup_pages)
     print("קטעים כפולים הוסרו:  ", dup_chunks)
     print("קטעים קצרים הוסרו:   ", short)
