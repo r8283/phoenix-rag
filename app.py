@@ -10,6 +10,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -333,8 +334,11 @@ for _k, _v in {"messages": [], "busy": False, "pending": None, "pending_audio": 
 VOICE_FAIL_MSG = "לא הצלחתי לשמוע, אפשר לנסות שוב או לכתוב את השאלה."
 
 
+IL_TZ = ZoneInfo("Asia/Jerusalem")   # השרת בענן רץ ב-UTC
+
+
 def now_str():
-    return datetime.now().strftime("%H:%M")
+    return datetime.now(IL_TZ).strftime("%H:%M")
 
 
 def ask(q):
