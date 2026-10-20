@@ -586,8 +586,32 @@ _PERSONAL_MARK = _re.compile(
 )
 
 
+# שאלה על הנתונים של הלקוח עצמו: "הפוליסה (האישית) שלי", "סטטוס התביעה שלי" (עד מילה אחת באמצע)
+_PERSONAL_DATA = _re.compile(
+    r"(?<![א-ת])[ובהלמכש]{0,2}"
+    r"(?:פוליס(?:ה|ת|ות)|תביע(?:ה|ת|ות)|חשבון|חשבונות|פנסי(?:ה|ת)|חיסכון|חסכון|הלווא(?:ה|ת|ות)|"
+    r"קרן|יתר(?:ה|ת)|כיסוי|כיסויים|תשלום|תשלומים|סטטוס|ביטוח)"
+    r"(?:\s+[א-ת]+)?\s+(?:שלי|שלנו|שלך)(?![א-ת])"
+)
+_PERSONAL_PHRASES = _re.compile(
+    r"(?<![א-ת])(?:אצלי|כמה שילמתי|כמה חסכתי|מה הסטטוס|מתי אקבל|מה היתרה)(?![א-ת])"
+)
+# שאלה על אפשרות או הליך כללי ("אפשר לקחת הלוואה מהחיסכון שלי?") אינה בקשה לנתון אישי
+_GENERAL_ASK = _re.compile(r"^(?:האם\s+)?(?:אפשר|ניתן|איך|כיצד)(?![א-ת])")
+
+
+def _is_personal_question(text):
+    """האם הלקוח שואל על הנתונים של עצמו (פוליסה, תביעה, יתרה). בספק, לא מסמנים אישית."""
+    t = _re.sub(r"\s+", " ", text or "").strip()
+    if _PERSONAL_PHRASES.search(t):
+        return True
+    return bool(_PERSONAL_DATA.search(t)) and not _GENERAL_ASK.match(t)
+
+
 def _ask(p, history, args, kwargs):
     """קריאה ל-_answer_core. אם המודל סימן 'אישית' שאלה שאין בה סימן אישי, מנסים פעם נוספת."""
+    if _is_personal_question(p):
+        return {"status": "personal_only", "answer": PERSONAL_ONLY_TEXT, "sources": []}
     r = _answer_core(p, history, *args, **kwargs)
     if r.get("status") == "personal_only" and not _PERSONAL_MARK.search(p):
         r2 = _answer_core(p, history, *args, **kwargs)
