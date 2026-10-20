@@ -1,5 +1,5 @@
 """
-בדיקות ל-_clean_followups, בלי Gemini ובלי מודל ההטמעה (האחזור מוחלף בציון קבוע).
+בדיקות ל-_clean_followups, בלי Gemini ובלי מודל ההטמעה (האחזור מוחלף בקטע קבוע).
 שימוש:  python -m unittest test_followups -v
 """
 import unittest
@@ -9,11 +9,16 @@ import rag
 
 GOOD = "מה כוללת הלוואה כנגד חיסכון?"
 LOW = "איך מחשבים שטח של מעגל?"
+# הטקסט של "הקטעים שנשלפו" בכל הבדיקות
+PASSAGE = (
+    "הלוואה כנגד חיסכון כוללת ריבית לפי מסלול. לא צריך ערבים או ביטחונות. "
+    "ישנם שני סוגי קרנות פנסיה: קרן פנסיה מקיפה וקרן פנסיה כללית. הלוואה מספר"
+)
 
 
 def fake_retrieve(query, k=17):
     score = 0.70 if query == LOW else 0.90
-    return [{"score": score, "url": "u", "title": "t", "text": "x"}]
+    return [{"score": score, "url": "u", "title": "t", "text": PASSAGE}]
 
 
 @mock.patch.object(rag, "retrieve", side_effect=fake_retrieve)
@@ -46,6 +51,14 @@ class CleanFollowupsTest(unittest.TestCase):
 
     def test_low_retrieval_score(self, _):
         self.assertEqual(rag._clean_followups([LOW, GOOD], self.Q), [GOOD])
+
+    def test_term_missing_from_passages_rejected(self, _):
+        # "סיעוד" ו"מחלות" לא מופיעים בקטעים: רק 1 מ-3 מילות תוכן מכוסה
+        self.assertEqual(rag._clean_followups(["האם ביטוח סיעוד מכסה מחלות?"], self.Q), [])
+
+    def test_all_terms_in_passages_pass(self, _):
+        q = "מה ההבדל בין קרן פנסיה מקיפה לכללית?"
+        self.assertEqual(rag._clean_followups([q], self.Q), [q])
 
     def test_max_three(self, _):
         items = [f"מה כוללת הלוואה מספר {i}?" for i in range(5)]
