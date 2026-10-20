@@ -104,7 +104,7 @@ html, body, .stApp, .stMarkdown, button, input, textarea {
 [data-testid="stMain"], [data-testid="stAppScrollToBottomContainer"], section.main { overflow: hidden !important; }
 .block-container {
   max-width: 430px !important; height: calc(100dvh - 2rem); margin: 1rem auto !important;
-  padding: 0 0 120px 0 !important; overflow-y: auto; overflow-x: hidden;
+  padding: 0 0 150px 0 !important; overflow-y: auto; overflow-x: hidden;
   background-color: var(--wall);
   background-image: radial-gradient(#E6DCD2 1.2px, transparent 1.2px); background-size: 20px 20px;
   border-radius: 38px;
@@ -217,7 +217,7 @@ a.chip .n { background: #fff; border-radius: 50%; width: 18px; height: 18px; fon
 
 /* כפתור שאלה בקול: אייקון בלי עיגול, בתוך תיבת הכתיבה, מימין לכפתור השליחה */
 [data-testid="stElementContainer"]:has([data-testid="stPopover"]), [data-testid="stLayoutWrapper"]:has(> [data-testid="stPopover"]) {
-  position: fixed !important; bottom: 74px; left: calc(50% - 145px);
+  position: fixed !important; bottom: 44px; left: calc(50% - 145px);
   z-index: 300; width: 32px !important; min-width: 0 !important; margin: 0 !important; padding: 0 !important; gap: 0 !important;
 }
 [data-testid="stPopover"] { width: 32px; }
@@ -234,18 +234,21 @@ a.chip .n { background: #fff; border-radius: 50%; width: 18px; height: 18px; fon
 [data-testid="stPopover"] button [data-testid="stIconMaterial"] { font-size: 1.5rem; color: var(--brand); line-height: 1; }
 [data-testid="stPopoverBody"] { min-width: 300px; direction: rtl; }
 @media (max-width: 480px) {
-  [data-testid="stElementContainer"]:has([data-testid="stPopover"]), [data-testid="stLayoutWrapper"]:has(> [data-testid="stPopover"]) { left: 84px; bottom: 38px; }
+  [data-testid="stElementContainer"]:has([data-testid="stPopover"]), [data-testid="stLayoutWrapper"]:has(> [data-testid="stPopover"]) { left: 84px; bottom: 26px; }
 }
 
-/* קלט הודעה: בתוך המסגרת, בתחתית */
-[data-testid="stBottom"] { position: fixed !important; bottom: 0; left: 0; right: 0; width: 100%; z-index: 100; }
+/* קלט הודעה: פס אטום ברוחב המסגרת, בתחתית שלה. תוכן שנגלל נבלע מאחוריו */
+[data-testid="stBottom"] { position: fixed !important; bottom: 1rem !important; left: 0; right: 0; width: 100%; z-index: 100; }
 [data-testid="stBottom"], [data-testid="stBottom"] > div { background: transparent !important; }
-[data-testid="stBottomBlockContainer"], [data-testid="stBottom"] > div {
+[data-testid="stBottomBlockContainer"] {
   max-width: 430px !important; margin: 0 auto; padding-inline: 14px !important;
-  padding-bottom: calc(1rem + 14px) !important; padding-top: 0 !important;
+  padding-top: 12px !important; padding-bottom: 14px !important;
+  background: #F4EFEA !important; border-radius: 0 0 38px 38px;
+  box-shadow: 0 -8px 14px -8px rgba(0,0,0,.10);
 }
 @media (max-width: 480px) {
-  [data-testid="stBottomBlockContainer"], [data-testid="stBottom"] > div { padding-bottom: 12px !important; }
+  [data-testid="stBottom"] { bottom: 0 !important; }
+  [data-testid="stBottomBlockContainer"] { border-radius: 0; padding-bottom: 12px !important; }
 }
 [data-testid="stChatInput"] {
   background: #fff; border-radius: 999px; border: 1px solid #E5DED7; box-shadow: 0 2px 10px rgba(0,0,0,.10);
