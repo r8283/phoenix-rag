@@ -15,6 +15,15 @@ import streamlit.components.v1 as components
 
 import rag
 
+
+@st.cache_resource
+def _warm_up():
+    rag._load_index()
+    return True
+
+
+_warm_up()
+
 LOGO = Path("assets/logo.png")
 HAS_LOGO = LOGO.exists()
 # לוגו מוטמע (גיבוי, אם הקובץ assets/logo.png לא קיים)

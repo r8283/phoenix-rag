@@ -10,3 +10,6 @@ gatherUsageStats = false
 
 [client]
 toolbarMode = "minimal"
+
+[server]
+fileWatcherType = "none"
