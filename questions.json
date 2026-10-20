@@ -30,5 +30,9 @@
     {"id": 26, "type": "personal", "question": "האם הפוליסה שלי מכסה את הנזק?"},
     {"id": 27, "type": "personal", "question": "מה סטטוס התביעה שלי?"},
     {"id": 28, "type": "personal", "question": "כמה שילמתי השנה על הביטוח שלי?"},
-    {"id": 29, "type": "personal", "question": "האם כדאי לי להגדיל את הכיסוי בפוליסה שלי?"}
+    {"id": 29, "type": "personal", "question": "האם כדאי לי להגדיל את הכיסוי בפוליסה שלי?"},
+    {"id": 30, "type": "in", "question": "מה זה לוח שפיצר?", "expect_any": ["loans"]},
+    {"id": 31, "type": "in", "question": "אפשר לקחת הלוואה מהחיסכון שלי?", "expect_any": ["loans-from-savings"]},
+    {"id": 32, "type": "in", "question": "מה זה קרן פנסיה?", "expect_any": ["pension-savings"]},
+    {"id": 33, "type": "in", "question": "מה מכסה ביטוח חיות מחמד?", "expect_any": ["pets", "best-friend"]}
   ]
