@@ -112,9 +112,10 @@ ANSWER_PROMPT = """אתה עוזר צ'אט באתר הפניקס (ביטוח ו�
 7. דיוק עובדתי: כל עובדה, הוראה מעשית ותנאי בתשובה חייבים להיות נתמכים במפורש בקטעים המצורפים. אין להוסיף פרטים על סמך ידע כללי, ואין להציג המלצה כאילו היא חובה אם המקור אינו אומר זאת.
 8. בטיחות: כאשר התשובה עוסקת בפעולה שעלולה להיות מסוכנת, אין להורות לבצע אותה בתנאים לא בטוחים. יש לציין בקצרה את מגבלת הבטיחות רק אם היא נתמכת במקור המצורף או נדרשת למניעת הוראה מסוכנת.
 9. ענה על מה שהלקוח שאל בפועל ("שאלת הלקוח כפי שנכתבה"). "השאלה המנוסחת" נועדה רק להשלים הקשר משיחה קודמת. אם נושא השאלה שהלקוח כתב אינו מטופל בקטעים (למשל נושא שאינו קשור לאתר), החזר status="not_found", גם אם יש קטעים קרובים לנושא ביטוחי כללי. אל תענה על שאלה אחרת מזו שנשאלה.
+10. הצע עד 3 שאלות המשך קצרות (עד 60 תווים, בעברית, מסתיימות בסימן שאלה) שהלקוח עשוי לשאול בעקבות התשובה, ושהקטעים המצורפים יכולים לענות עליהן. אל תחזור על שאלת הלקוח. אם אין שאלות מתאימות, החזר רשימה ריקה.
 
 החזר JSON בלבד, בפורמט:
-{"status": "answered" | "not_found" | "personal_only", "answer": "<התשובה>", "used": [<מספרי קטעים>], "personal": true | false}
+{"status": "answered" | "not_found" | "personal_only", "answer": "<התשובה>", "used": [<מספרי קטעים>], "personal": true | false, "followups": [<עד 3 שאלות המשך>]}
 
 קטעים:
 {{EXCERPTS}}
@@ -275,6 +276,40 @@ def _clean_used(raw, n):
     return out
 
 
+MAX_FOLLOWUPS = 3
+
+
+def _norm_q(text):
+    return re.sub(r"[\s?]+", "", text or "")
+
+
+def _clean_followups(raw, question):
+    """מסנן את הצעות ההמשך של המודל: עד 3 שאלות תקינות, שהאתר כנראה יכול לענות עליהן.
+    הבדיקה מקומית בלבד (אחזור), בלי קריאה ל-Gemini."""
+    if not isinstance(raw, list):
+        return []
+    out, seen = [], {_norm_q(question)}
+    for item in raw:
+        if not isinstance(item, str):
+            continue
+        q = item.strip()
+        if not (8 <= len(q) <= 70) or not q.endswith("?"):
+            continue
+        if _has_garbled_chars(q) or _NIKUD.search(q) or _FOREIGN.search(q):
+            continue
+        key = _norm_q(q)
+        if key in seen:
+            continue
+        hits = retrieve(q, k=1)
+        if not hits or hits[0]["score"] < MIN_SCORE:
+            continue
+        seen.add(key)
+        out.append(q)
+        if len(out) == MAX_FOLLOWUPS:
+            break
+    return out
+
+
 def parse_json(text):
     text = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.M).strip()
     start, end = text.find("{"), text.rfind("}")
@@ -347,6 +382,7 @@ def answer(question, history=None):
         "standalone": standalone,
         "top_score": top,
         "model": None,
+        "followups": [],
     }
 
     # שער ראשון: אין תוצאות או שהציון הטוב ביותר נמוך מהסף.
@@ -398,7 +434,10 @@ def answer(question, history=None):
     if data.get("personal"):
         body += " " + PERSONAL_NOTE
 
-    result.update(status="answered", answer=body, sources=sources)
+    result.update(
+        status="answered", answer=body, sources=sources,
+        followups=_clean_followups(data.get("followups"), question),
+    )
     return result
 
 
@@ -547,12 +586,13 @@ def _answer_multi(parts, history, args, kwargs):
                 return r
         return results[0]
 
-    sections, sources = [], []
+    sections, sources, followups = [], [], []
     for p, r in zip(parts, results):
         title = "**" + p + "**"
         if r.get("status") == "answered":
             body = r["answer"]
             sources += r.get("sources", [])
+            followups += r.get("followups", [])
         elif r.get("status") == "personal_only":
             body = PERSONAL_ONLY_TEXT
         elif r.get("status") == "llm_unavailable":
@@ -564,6 +604,7 @@ def _answer_multi(parts, history, args, kwargs):
         "status": "answered",
         "answer": "\n\n".join(sections),
         "sources": list(dict.fromkeys(sources))[:4],
+        "followups": list(dict.fromkeys(followups))[:MAX_FOLLOWUPS],
     }
 def answer(question, history=None, *args, **kwargs):
     meta = _meta_reply(question)

@@ -467,6 +467,7 @@ if question:
         "content": res.get("answer", ""),
         "sources": res.get("sources", []),
         "status": res.get("status"),
+        "followups": res.get("followups", []),
         "t": now_str(),
     }
     st.session_state.messages.append(bot_msg)
@@ -475,6 +476,11 @@ if question:
 # ---------- הצעות לשאלות נוספות ----------
 def followup_questions(msgs, n=3):
     asked = {m["content"] for m in msgs if m["role"] == "user"}
+    # הצעות שהמודל נתן לתשובה האחרונה (כבר סוננו ב-rag). אם אין, רשימה קבועה לפי נושא
+    asked_norm = {rag._norm_q(q) for q in asked}
+    own = [q for q in (msgs[-1].get("followups") or []) if rag._norm_q(q) not in asked_norm]
+    if own:
+        return own[:n]
     last_q = next((m["content"] for m in reversed(msgs) if m["role"] == "user"), "")
     last_a = msgs[-1].get("content", "")
     text = last_q + " " + last_a
