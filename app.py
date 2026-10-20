@@ -234,8 +234,14 @@ a.chip .n { background: #fff; border-radius: 50%; width: 18px; height: 18px; fon
 }
 [data-testid="stPopover"] button [data-testid="stIconMaterial"] { font-size: 1.5rem; color: var(--brand); line-height: 1; }
 [data-testid="stPopoverBody"] { min-width: 300px; direction: rtl; }
+/* חלון ההקלטה: בתוך המסגרת ומעל תיבת הכתיבה (ברירת המחדל ממקמת אותו לפי הכפתור, ובמחשב הוא יצא מהמסגרת) */
+[data-testid="stPopoverBody"] {
+  transform: none !important; top: auto !important; left: calc(50% - 201px) !important;
+  bottom: 98px !important; width: 402px !important; max-width: 402px !important;
+}
 @media (max-width: 480px) {
   [data-testid="stElementContainer"]:has([data-testid="stPopover"]), [data-testid="stLayoutWrapper"]:has(> [data-testid="stPopover"]) { left: 84px; bottom: 26px; }
+  [data-testid="stPopoverBody"] { left: 8px !important; right: 8px !important; width: auto !important; max-width: none !important; bottom: 80px !important; }
 }
 
 /* קלט הודעה: פס אטום ברוחב המסגרת, בתחתית שלה. תוכן שנגלל נבלע מאחוריו */
