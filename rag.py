@@ -460,6 +460,12 @@ def answer(question, history=None):
     if status == "answered" and body and not sources:
         print(f"  [rag] המודל ענה אבל used לא תקין: {data.get('used')!r}", file=sys.stderr)
 
+    # המודל קבע שהקטעים לא עונים על השאלה: סירוב, ומתחתיו הצעות שלו לניסוח שהאתר כן עונה עליו
+    # (למשל "קופת גמל להשקעה" במקום "קופת גמל"), אחרי אותו סינון של תשובה רגילה
+    if status == "not_found":
+        result["followups"] = _clean_followups(data.get("followups"), question)
+        return result
+
     # אין מקור מאומת שנבחר לתשובה — אין תשובה
     if status != "answered" or not body or not sources:
         return result

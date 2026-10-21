@@ -23,5 +23,6 @@
     {"id": 22, "type": "near", "question": "מה מחיר המניה של הפניקס היום?"},
     {"id": 23, "type": "out", "question": "מה מזג האוויר מחר?"},
     {"id": 24, "type": "out", "question": "מי זכה במונדיאל האחרון?"},
-    {"id": 25, "type": "personal", "question": "האם כדאי לי להגדיל את הכיסוי בפוליסה שלי?"}
+    {"id": 25, "type": "personal", "question": "האם כדאי לי להגדיל את הכיסוי בפוליסה שלי?"},
+    {"id": 26, "type": "in", "question": "מה ההבדל בין קופת גמל להשקעה לקרן השתלמות?", "expect_any": ["gemel-vs-hishtalmot"]}
   ]

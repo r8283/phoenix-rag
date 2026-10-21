@@ -88,6 +88,26 @@ class CacheTest(unittest.TestCase):
         self.assertEqual(rag.answer("מה זה ביטוח תכולה?", [])["sources"], ["https://www.fnx.co.il/a/"])
 
 
+class RefusalInCacheTest(unittest.TestCase):
+    def test_model_refusal_keeps_followups_in_cache(self):
+        import build_cache
+        q = {"question": "מה ההבדל בין קופת גמל לקרן השתלמות?"}
+        res = {"status": "not_found", "answer": rag.NOT_FOUND_TEXT, "sources": [],
+               "followups": ["מה ההבדל בין קופת גמל להשקעה לקרן השתלמות?"], "model": "m"}
+        e = build_cache.entry(q, res, [])
+        self.assertEqual(e["followups"], res["followups"])
+        old = rag._cache, rag.USE_CACHE
+        try:
+            rag._cache, rag.USE_CACHE = {(e["key"], e["prev_key"]): e}, True
+            with mock.patch.object(rag, "_answer_core") as core:
+                r = rag.answer("מה ההבדל בין קופת גמל לקרן השתלמות", [])
+            core.assert_not_called()
+            self.assertEqual(r["status"], "not_found")
+            self.assertEqual(r["followups"], res["followups"])
+        finally:
+            rag._cache, rag.USE_CACHE = old
+
+
 class MultiModelTest(unittest.TestCase):
     def test_double_question_lists_part_models(self):
         rag_results = iter([{"status": "answered", "answer": "א", "sources": [], "model": "m1"},
