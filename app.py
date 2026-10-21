@@ -33,6 +33,7 @@ LOGO_B64 = "iVBORw0KGgoAAAANSUhEUgAAAZkAAACTCAIAAADTK/NLAAAnNUlEQVR4nO2deVwT1/r/
 PAGES_PATH = Path("data/pages.jsonl")
 
 APP_TITLE = "עוזר דיגיטלי"
+PAGE_TITLE = "עוזר דיגיטלי | הפניקס"   # כותרת לשונית הדפדפן
 APP_SUBTITLE = "שאלות על שירותי הפניקס, תשובות מהאתר"
 DISCLAIMER = (
     "פרויקט האקתון. השירות אינו אתר רשמי של הפניקס, אינו ייעוץ ביטוחי "
@@ -70,7 +71,7 @@ BUSY_MSG = "השירות עמוס כרגע. אפשר לנסות שוב בעוד 
 NOT_FOUND_HINT = ""
 
 st.set_page_config(
-    page_title=APP_TITLE,
+    page_title=PAGE_TITLE,
     page_icon=str(LOGO) if HAS_LOGO else "💬",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -555,11 +556,21 @@ if (
             for i, q in enumerate(suggestions):
                 st.button(q, key=f"fu_{len(st.session_state.messages)}_{i}", on_click=ask, args=(q,))
 
-# ---------- גלילה אוטומטית לסוף השיחה (בתוך המסגרת) ----------
+# ---------- גלילה אוטומטית לסוף השיחה (בתוך המסגרת), וכותרת הלשונית ----------
+# הכותרת: בענן מתווספת לפעמים הסיומת " · Streamlit". מחזירים את הכותרת שלנו בכל פעם שהיא משתנה.
+# הכל באותו רכיב בגובה 0, כדי לא להוסיף רכיב או רווח למסך.
 components.html(
     """<script>
-    const box = window.parent.document.querySelector('.block-container');
+    const doc = window.parent.document;
+    const box = doc.querySelector('.block-container');
     if (box) { setTimeout(() => box.scrollTo({top: box.scrollHeight, behavior: 'smooth'}), 150); }
+    const T = """ + json.dumps(PAGE_TITLE) + """;
+    const fix = () => { if (doc.title !== T) doc.title = T; };
+    fix();
+    if (!window.parent.__fnxTitleObs) {
+      window.parent.__fnxTitleObs = new MutationObserver(fix);
+      window.parent.__fnxTitleObs.observe(doc.head, {childList: true, subtree: true, characterData: true});
+    }
     </script>""",
     height=0,
 )
