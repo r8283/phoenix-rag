@@ -668,6 +668,8 @@ def _answer_multi(parts, history, args, kwargs):
                 return r
         return results[0]
 
+    # שמות המודלים שענו על החלקים (חלק אישי או meta לא קורא למודל)
+    models = list(dict.fromkeys(r.get("model") for r in results if r.get("model")))
     sections, sources, followups = [], [], []
     for p, r in zip(parts, results):
         title = "**" + p + "**"
@@ -687,13 +689,72 @@ def _answer_multi(parts, history, args, kwargs):
         "answer": "\n\n".join(sections),
         "sources": list(dict.fromkeys(sources))[:4],
         "followups": list(dict.fromkeys(followups))[:MAX_FOLLOWUPS],
+        "model": ", ".join(models) or None,
     }
+
+
+# ---------- מטמון תשובות שנבדקו מראש (שאלות הדמו) ----------
+# נבנה ב-build_cache.py. שאלה שאינה במטמון עוברת לחיפוש וליצירה רגילים.
+CACHE_PATH = Path("data/answer_cache.json")
+USE_CACHE = True
+CACHE_STATUSES = ("answered", "not_found", "personal_only", "meta")
+_cache = None
+
+
+def cache_key(text):
+    """נרמול לצורך השוואה: בלי פיסוק (כולל סימן שאלה וגרשיים מכל סוג), בלי רווחים כפולים."""
+    t = unicodedata.normalize("NFKC", text or "")
+    t = _re.sub(r"[^\w\s]", " ", t, flags=_re.UNICODE)
+    return _re.sub(r"\s+", " ", t).strip().lower()
+
+
+def _prev_question(history):
+    """השאלה הקודמת של הלקוח בשיחה, או None בשאלה ראשונה."""
+    return next((m["content"] for m in reversed(history or []) if m.get("role") == "user"), None)
+
+
+def _load_cache():
+    global _cache
+    if _cache is None:
+        try:
+            entries = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            entries = []
+        _cache = {(e["key"], e.get("prev_key")): e for e in entries}
+    return _cache
+
+
+def cache_lookup(question, history=None):
+    """תשובה שמורה, או None.
+    שאלת המשך נשמרה יחד עם השאלה שלפניה, ונשלפת רק כשגם השאלה הקודמת בשיחה זהה.
+    שאלה עצמאית נשלפת לפי השאלה בלבד."""
+    if not USE_CACHE:
+        return None
+    cache = _load_cache()
+    key, prev = cache_key(question), _prev_question(history)
+    entry = None
+    if prev is not None:
+        entry = cache.get((key, cache_key(prev)))
+    if entry is None:
+        entry = cache.get((key, None))
+    if entry is None or entry.get("status") not in CACHE_STATUSES:
+        return None
+    out = {k: entry.get(k) for k in ("status", "answer", "sources", "followups", "model")}
+    out["sources"] = list(out["sources"] or [])
+    out["followups"] = list(out["followups"] or [])
+    out["cached"] = True
+    return out
+
+
 def answer(question, history=None, *args, **kwargs):
     meta = _meta_reply(question)
     if meta:
         return meta
     if _is_not_hebrew(question):
         return {"status": "not_found", "answer": LANGUAGE_TEXT, "sources": []}
+    cached = cache_lookup(question, history)
+    if cached:
+        return cached
     parts = _split_questions(question)
     if len(parts) >= 2:
         return _answer_multi(parts, history, args, kwargs)

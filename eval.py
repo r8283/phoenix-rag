@@ -63,6 +63,7 @@ def main():
     ap.add_argument("--no-rewrite", action="store_true")
     args = ap.parse_args()
 
+    rag.USE_CACHE = False   # הבדיקה מודדת את החיפוש והמודל, לא את המטמון
     if args.min_score is not None:
         rag.MIN_SCORE = args.min_score
     if args.no_rewrite:
