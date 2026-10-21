@@ -557,19 +557,24 @@ if (
                 st.button(q, key=f"fu_{len(st.session_state.messages)}_{i}", on_click=ask, args=(q,))
 
 # ---------- גלילה אוטומטית לסוף השיחה (בתוך המסגרת), וכותרת הלשונית ----------
-# הכותרת: בענן מתווספת לפעמים הסיומת " · Streamlit". מחזירים את הכותרת שלנו בכל פעם שהיא משתנה.
+# הכותרת: ב-Streamlit Cloud האפליקציה רצה בתוך iframe, והדף העוטף (באותו origin) מוסיף לכותרת " · Streamlit".
+# לכן הכותרת נקבעת גם בדף של האפליקציה וגם בדף העליון, ומוחזרת בכל פעם שהיא משתנה.
 # הכל באותו רכיב בגובה 0, כדי לא להוסיף רכיב או רווח למסך.
 components.html(
     """<script>
-    const doc = window.parent.document;
-    const box = doc.querySelector('.block-container');
+    const box = window.parent.document.querySelector('.block-container');
     if (box) { setTimeout(() => box.scrollTo({top: box.scrollHeight, behavior: 'smooth'}), 150); }
     const T = """ + json.dumps(PAGE_TITLE) + """;
-    const fix = () => { if (doc.title !== T) doc.title = T; };
-    fix();
-    if (!window.parent.__fnxTitleObs) {
-      window.parent.__fnxTitleObs = new MutationObserver(fix);
-      window.parent.__fnxTitleObs.observe(doc.head, {childList: true, subtree: true, characterData: true});
+    for (const w of new Set([window.parent, window.top])) {
+      try {
+        const doc = w.document;
+        const fix = () => { if (doc.title !== T) doc.title = T; };
+        fix();
+        if (!w.__fnxTitleObs) {
+          w.__fnxTitleObs = new MutationObserver(fix);
+          w.__fnxTitleObs.observe(doc.head, {childList: true, subtree: true, characterData: true});
+        }
+      } catch (e) { /* דף ממקור אחר: אי אפשר לשנות, נשארת הכותרת של page_title */ }
     }
     </script>""",
     height=0,
