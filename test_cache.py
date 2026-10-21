@@ -108,6 +108,51 @@ class RefusalInCacheTest(unittest.TestCase):
             rag._cache, rag.USE_CACHE = old
 
 
+class OverridesTest(unittest.TestCase):
+    """התשובה המבוקרת לשאלה הכללית על קופת גמל וקרן השתלמות, מהקבצים האמיתיים."""
+    EXACT = "מה ההבדל בין קופת גמל להשקעה לקרן השתלמות?"
+
+    def setUp(self):
+        self._old = rag._cache, rag.USE_CACHE
+        rag._cache, rag.USE_CACHE = None, True   # טעינה מחדש מהקבצים
+        self.core = mock.patch.object(rag, "_answer_core").start()
+        self.addCleanup(mock.patch.stopall)
+
+    def tearDown(self):
+        rag._cache, rag.USE_CACHE = self._old
+
+    def test_general_question_variants_get_controlled_refusal(self):
+        for q in ["מה ההבדל בין קופת גמל לקרן השתלמות?", "מה ההבדל בין קרן השתלמות לקופת גמל?",
+                  "מה ההבדל בין קופת גמל לקרן השתלמות", "מה ההבדל בין  קופת גמל לבין קרן השתלמות ?"]:
+            with self.subTest(q=q):
+                r = rag.answer(q, [])
+                self.assertTrue(r.get("cached"))
+                self.assertEqual(r["status"], "not_found")
+                self.assertEqual(r["answer"], rag.NOT_FOUND_TEXT)
+                self.assertIn("*3455", r["answer"])
+                self.assertEqual(r["sources"], [])
+                self.assertEqual(r["followups"], [self.EXACT])
+        self.core.assert_not_called()
+
+    def test_controlled_refusal_also_mid_conversation(self):
+        r = rag.answer("מה ההבדל בין קופת גמל לקרן השתלמות?",
+                       [{"role": "user", "content": "מה זה קרן פנסיה?"}, {"role": "assistant", "content": "..."}])
+        self.assertEqual(r["status"], "not_found")
+        self.core.assert_not_called()
+
+    def test_suggestion_is_the_cached_exact_question(self):
+        r = rag.answer(self.EXACT, [])
+        self.assertTrue(r.get("cached"))
+        self.assertEqual(r["status"], "answered")
+        self.assertEqual(r["sources"], ["https://www.fnx.co.il/gemel/gemel-information/gemel-vs-hishtalmot/"])
+        self.core.assert_not_called()
+
+    def test_overrides_bypassed_when_cache_disabled(self):
+        rag.USE_CACHE = False
+        rag.answer("מה ההבדל בין קופת גמל לקרן השתלמות?", [])
+        self.core.assert_called_once()
+
+
 class MultiModelTest(unittest.TestCase):
     def test_double_question_lists_part_models(self):
         rag_results = iter([{"status": "answered", "answer": "א", "sources": [], "model": "m1"},

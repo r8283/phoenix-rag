@@ -719,6 +719,27 @@ def _prev_question(history):
     return next((m["content"] for m in reversed(history or []) if m.get("role") == "user"), None)
 
 
+# תשובות מבוקרות שנכתבו ונבדקו ידנית, לשאלות שהמודל עונה עליהן באופן לא יציב.
+# build_cache.py לא נוגע בקובץ הזה, ותשובה ממנו גוברת על המטמון.
+# "answer": "NOT_FOUND_TEXT" פירושו נוסח הסירוב הרגיל, כולל פרטי שירות הלקוחות.
+OVERRIDES_PATH = Path("data/answer_overrides.json")
+
+
+def _load_overrides():
+    try:
+        groups = json.loads(OVERRIDES_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    entries = []
+    for g in groups:
+        answer = NOT_FOUND_TEXT if g.get("answer") == "NOT_FOUND_TEXT" else g.get("answer", "")
+        for q in g.get("questions", []):
+            entries.append({"key": cache_key(q), "prev_key": None, "question": q, "status": g.get("status"),
+                            "answer": answer, "sources": g.get("sources", []), "followups": g.get("followups", []),
+                            "model": g.get("model", "controlled")})
+    return entries
+
+
 def _load_cache():
     global _cache
     if _cache is None:
@@ -726,7 +747,7 @@ def _load_cache():
             entries = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             entries = []
-        _cache = {(e["key"], e.get("prev_key")): e for e in entries}
+        _cache = {(e["key"], e.get("prev_key")): e for e in entries + _load_overrides()}
     return _cache
 
 
